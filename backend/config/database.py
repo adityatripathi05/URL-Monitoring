@@ -1,36 +1,73 @@
 # backend\config\database.py
+import asyncio
+import logging
 import os
-from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import QueuePool
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+import asyncpg
+from typing import List, Dict, Optional
 
-# Database connection details from environment variables
-DB_USER = os.environ.get("DB_USER")
-DB_PASSWORD = os.environ.get("DB_PASSWORD")
-DB_NAME = os.environ.get("DB_NAME")
-DB_PORT = os.environ.get("DB_PORT")
+# Configure logging
+logger = logging.getLogger(__name__)
 
-# Construct the database URL for asyncpg
-SQLALCHEMY_DATABASE_URL = f"postgresql+asyncpg://{DB_USER}:{DB_PASSWORD}@db:{DB_PORT}/{DB_NAME}"
+# Database configuration settings from environment variables
+DB_CONFIG = {
+    "host": os.getenv("DB_HOST", "localhost"),
+    "database": os.getenv("DB_NAME", "monitoring"),
+    "user": os.getenv("DB_USER", "postgres"),
+    "password": os.getenv("DB_PASSWORD", "password"),
+    "port": int(os.getenv("DB_PORT", "5432"))
+}
 
-# Connection pool settings from environment variables
-pool_size = int(os.environ.get("DB_POOL_SIZE", 5))
-max_overflow = int(os.environ.get("DB_MAX_OVERFLOW", 10))
-pool_recycle = int(os.environ.get("DB_POOL_RECYCLE", 3600))
 
-# Create an asynchronous engine with connection pooling
-engine = create_async_engine(SQLALCHEMY_DATABASE_URL, pool_size=pool_size, max_overflow=max_overflow, pool_recycle=pool_recycle)
+class Database:
+    """
+    Manages the asyncpg database connection pool.
+    """
 
-# Asynchronous session maker
-AsyncSessionLocal = sessionmaker(
-    autocommit=False,
-    autoflush=False,
-    bind=engine,
-    class_=AsyncSession,
-    expire_on_commit=False
-)
+    def __init__(self, db_config: Dict[str, str]):
+        """
+        Initializes the Database object with the given configuration.
+        Args:
+            db_config (Dict[str, str]): Database configuration parameters.
+        """
+        if not all(key in db_config for key in ['host', 'database', 'user', 'password']):
+            raise ValueError("Missing required database configuration parameters")
+        self.db_config = db_config
+        self.pool = None
+        self.logger = logging.getLogger(__name__)
 
-# Base class for declarative models
-Base = declarative_base()
+    async def initialize(self):
+        """
+        Initializes the database connection pool.
+        """
+        if self.pool is None:
+            try:
+                self.pool = await asyncpg.create_pool(**self.db_config, min_size=1, max_size=20)
+                self.logger.info("Database connection pool initialized")
+            except Exception as e:
+                self.logger.error(f"Error initializing database connection pool: {e}")
+                raise
+
+        return self
+
+    async def close(self):
+        """
+        Closes the database connection pool.
+        """
+        if self.pool:
+            await self.pool.close()
+            self.logger.info("Database connection pool closed")
+
+
+# Global database instance
+database = Database(DB_CONFIG)
+
+
+async def get_db_connection():
+    """
+    Asynchronous dependency that yields a database connection from the pool.
+    """
+    await database.initialize()
+    try:
+        yield database
+    finally:
+        pass  # Don't close pool here as it's shared
