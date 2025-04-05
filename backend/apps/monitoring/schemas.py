@@ -3,10 +3,17 @@ from pydantic import BaseModel
 from datetime import datetime
 
 class HTTPCheckBase(BaseModel):
-    url: str
+    server: str
+    method: str
     status_code: int
+    result: str
     response_time: float
-    success: bool
+    content_length: int
+    response_string_match: int
+    response_status_code_match: int
+    http_response_code: int
+    result_type: str
+    result_code: int
 
 class HTTPCheckCreate(HTTPCheckBase):
     pass
@@ -16,4 +23,4 @@ class HTTPCheck(HTTPCheckBase):
     time: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True

@@ -3,7 +3,7 @@ from pydantic import BaseSettings
 
 class Settings(BaseSettings):
     app_name: str = "URL Monitoring System"
-    admin_email: str = "admin@example.com"
+    admin_email: str = "triaditya94@gmail.com"
 
     class Config:
         env_file = ".env"
