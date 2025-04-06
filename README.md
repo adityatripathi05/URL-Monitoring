@@ -2,7 +2,7 @@
 
 This is a URL monitoring system built with FastAPI, React, TimescaleDB, and Telegraf. It is designed to monitor thousands of URLs simultaneously with minimal performance impact.
 
-## Architecture
+## Project Architecture
 
 ```mermaid
 graph TD
@@ -52,3 +52,16 @@ graph TD
 1.  Install Docker and Docker Compose.
 2.  Clone the repository.
 3.  Run `docker-compose up --build` to start the application.
+
+
+## Database Migration Management Architecture
+```mermaid
+graph LR
+  A["Schema Change Needed"] --> B["Write SQL Script: 001_initial_schema.sql"]
+  B --> C["Place in backend/migrations"]
+  D["FastAPI Startup"] --> E["Run apply_migrations()"]
+  E --> F{"Check _migrations table"}
+  F --> G{"Execute New Scripts"}
+  G --> H["Update _migrations table"]
+  H --> I["Database Schema Updated"]
+```
