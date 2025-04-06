@@ -4,6 +4,8 @@ __pycache__
 .DS_Store
 .vscode
 .env
+backend/.env
+pg-admin/
+pgadmin-data/
 node_modules
 frontend/build
-backend/.env

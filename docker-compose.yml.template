@@ -1,7 +1,30 @@
 version: "3.9"
 services:
-  backend:
+
+  url-db:
+    image: timescale/timescaledb:latest-pg17
+    container_name: url-db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_HOST_AUTH_METHOD: md5
+    networks:
+      - monitoring-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 3s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  url-backend:
     build: ./backend
+    container_name: url-backend
     ports:
       - "8000:8000"
     volumes:
@@ -9,20 +32,37 @@ services:
     env_file: .env
     networks:
       - monitoring-network
+    # healthcheck:
+    #   test: ["CMD", "curl", "-f", "-X", "GET", "http://localhost:8000/health", "-H", "accept: application/json"]  # backend's health endpoint
+    #   interval: 10s
+    #   timeout: 5s
+    #   retries: 5
     depends_on:
-      - db
-  db:
-    image: timescale/timescaledb:latest-pg17
+      url-db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  url-pgadmin:
+    image: dpage/pgadmin4
+    container_name: url-pgadmin
     ports:
-      - "5432:5432"
-    env_file: .env
+      - "5050:80"
     volumes:
-      - db_data:/var/lib/postgresql/data
+      - ./pgadmin-data:/var/lib/pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: triaditya94@gmail.com
+      PGADMIN_DEFAULT_PASSWORD: admin
     networks:
       - monitoring-network
+    depends_on:
+      url-db:
+        condition: service_healthy
+    restart: unless-stopped
 
 volumes:
-  db_data:
+  pg-data:
+    driver: local
+  pgadmin-data:
     driver: local
 
 networks:

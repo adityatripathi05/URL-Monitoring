@@ -3,18 +3,19 @@ import asyncio
 import logging
 import os
 import asyncpg
-from typing import List, Dict, Optional
+from typing import Dict
+
 
 # Configure logging
 logger = logging.getLogger(__name__)
 
 # Database configuration settings from environment variables
 DB_CONFIG = {
-    "host": os.getenv("DB_HOST", "localhost"),
-    "database": os.getenv("DB_NAME", "monitoring"),
-    "user": os.getenv("DB_USER", "postgres"),
-    "password": os.getenv("DB_PASSWORD", "password"),
-    "port": int(os.getenv("DB_PORT", "5432"))
+    "host": os.getenv("DB_HOST"),
+    "database": os.getenv("DB_NAME"),
+    "user": os.getenv("DB_USER"),
+    "password": os.getenv("DB_PASSWORD"),
+    "port": int(os.getenv("DB_PORT"))
 }
 
 
