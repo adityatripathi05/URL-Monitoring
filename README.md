@@ -6,15 +6,36 @@ This is a URL monitoring system built with FastAPI, React, TimescaleDB, and Tele
 
 ```mermaid
 graph TD
-    A[Load Balancer] --> B[API Gateway]
-    B --> C[Message Broker]
-    C --> D[Monitoring Workers]
-    D --> E[Time-Series DB]
-    E --> F[Analytics Engine]
-    F --> G[Dashboard]
-    H[Scheduler] --> C
-    style D fill:#9f9,stroke:#333
-    style E fill:#f96,stroke:#333
+  subgraph Monitoring
+    Telegraf[Telegraf Agent]
+    URL1[Monitored URL 1]
+    URL2[Monitored URL 2]
+    URL3[Monitored URL 3]
+    Telegraf -->|Collect Metrics via inputs.http_response| URL1
+    Telegraf --> URL2
+    Telegraf --> URL3
+  end
+
+  subgraph Web_API_Layer
+    Nginx[Nginx - Reverse Proxy]
+    Gunicorn[Gunicorn App Server]
+    FastAPI[FastAPI Backend]
+    Nginx --> Gunicorn
+    Gunicorn --> FastAPI
+    FastAPI -->|Serve Target URLs| Telegraf
+  end
+
+  subgraph Data_Storage
+    TimescaleDB[(TimescaleDB)]
+    Telegraf -->|Send Metrics via outputs.postgresql| TimescaleDB
+    FastAPI -->|Store Metadata| TimescaleDB
+    FastAPI <-->|Query Metrics| TimescaleDB
+  end
+
+  subgraph Visualization
+    React[React Frontend]
+    React -->|API Requests| Nginx
+  end
 ```
 
 ## Components
