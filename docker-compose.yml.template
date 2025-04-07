@@ -2,12 +2,14 @@ version: "3.9"
 services:
 
   url-db:
-    image: timescale/timescaledb:latest-pg17
+    build:
+      context: .
+      dockerfile: Dockerfile.db
     container_name: url-db
     ports:
       - "5432:5432"
     volumes:
-      - pg-data:/var/lib/postgresql/data
+      - ./pg-data:/var/lib/postgresql/data
     environment:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
@@ -16,7 +18,7 @@ services:
     networks:
       - monitoring-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      test: ["CMD-SHELL", "pg_isready -U admin -d monitoring"]
       interval: 3s
       timeout: 5s
       retries: 5
@@ -32,11 +34,6 @@ services:
     env_file: .env
     networks:
       - monitoring-network
-    # healthcheck:
-    #   test: ["CMD", "curl", "-f", "-X", "GET", "http://localhost:8000/health", "-H", "accept: application/json"]  # backend's health endpoint
-    #   interval: 10s
-    #   timeout: 5s
-    #   retries: 5
     depends_on:
       url-db:
         condition: service_healthy

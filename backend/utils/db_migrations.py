@@ -4,7 +4,7 @@ import os
 import asyncpg
 import asyncio  # Import asyncio for sleep
 
-from utils.logging import logger
+from utils.app_logging import logger
 from config.database import DB_CONFIG
 
 

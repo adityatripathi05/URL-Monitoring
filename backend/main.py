@@ -1,7 +1,8 @@
 # backend\main.py
+# backend\main.py
 from fastapi import FastAPI
 
-from utils.logging import logger
+from utils.app_logging import logger
 from config.database import database
 from utils.db_migrations import apply_migrations
 

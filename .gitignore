@@ -5,6 +5,6 @@ __pycache__
 .env
 .vscode
 docker-compose.yml
-pg-admin/
+pg-data/
 pgadmin-data/
 pgadmin-data/pgadmin4.db

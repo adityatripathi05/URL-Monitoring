@@ -1,0 +1,10 @@
+# Use the TimescaleDB Alpine-based image
+FROM timescale/timescaledb:latest-pg17
+
+# Install musl-locales for locale support
+RUN apk add --no-cache musl-locales
+
+# Set locale environment variables
+ENV LANG=en_US.UTF-8 \
+    LANGUAGE=en_US:en \
+    LC_ALL=en_US.UTF-8
