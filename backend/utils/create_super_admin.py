@@ -1,9 +1,13 @@
 import asyncpg
 import os
-import bcrypt
+# import bcrypt # No longer needed directly
+from passlib.context import CryptContext # Import passlib
 import asyncio
 from dotenv import load_dotenv
 import sys
+
+# Configure passlib context
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 async def create_super_admin():
     """Creates a super admin user in the database with interactive prompts."""
@@ -24,12 +28,7 @@ async def create_super_admin():
             print(f"Attempted to load .env from: {os.path.abspath(env_path)}")
             sys.exit(1)
 
-        # Add bcrypt dependency check
-        try:
-            import bcrypt
-        except ImportError:
-            print("Error: bcrypt package not found. Please install it (`pip install bcrypt`).")
-            sys.exit(1)
+        # Remove bcrypt dependency check
 
         conn = await asyncpg.connect(
             user=os.environ.get("DB_USER"),
@@ -50,8 +49,8 @@ async def create_super_admin():
         email = input("Email for the super admin user: ")
         password = input("Password for the super admin user: ")
 
-        # Hash password
-        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        # Hash password using passlib
+        hashed_password = pwd_context.hash(password)
 
         # Insert super admin user
         await conn.execute(

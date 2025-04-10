@@ -1,13 +1,14 @@
 # backend\utils\logging.py
 import logging
 import os
-import datetime
+from datetime import datetime, timezone
+
 
 LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO").upper()
 
 class UTCFormatter(logging.Formatter):
     def formatTime(self, record, datefmt=None):
-        dt = datetime.datetime.fromtimestamp(record.created, datetime.timezone.utc)
+        dt = datetime.fromtimestamp(record.created, timezone.utc)
         if datefmt:
             s = dt.strftime(datefmt)
         else:

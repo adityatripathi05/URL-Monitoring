@@ -1,6 +1,10 @@
-fastapi
-uvicorn[standard]
-python-dotenv
-alembic
 asyncpg
-bcrypt
+fastapi
+passlib[bcrypt]
+pydantic
+pydantic[email]
+pydantic-settings
+python-dotenv
+python-multipart
+python-jose[cryptography]
+uvicorn[standard]

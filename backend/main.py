@@ -1,12 +1,13 @@
 # backend\main.py
-# backend\main.py
 from fastapi import FastAPI
 
 from utils.app_logging import logger
 from config.database import database
 from utils.db_migrations import apply_migrations
+from apps.auth.routes import router as auth_router # Import the auth router
 
 app = FastAPI()
+
 
 @app.on_event("startup")
 async def startup_event():
@@ -25,5 +26,8 @@ async def on_shutdown():
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
+
+# Include the authentication router
+app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
 
 logger.info("Application started")

@@ -3,6 +3,7 @@ venv
 __pycache__
 .DS_Store
 .vscode
+.git
 .env
 backend/.env
 pg-data/

@@ -3,6 +3,7 @@ venv
 __pycache__
 .DS_Store
 .env
+.git
 .vscode
 docker-compose.yml
 pg-data/
