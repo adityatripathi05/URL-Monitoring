@@ -6,6 +6,8 @@ from typing import Optional
 class Settings(BaseSettings):
     app_name: str
     admin_email: str
+    app_version: str
+    environment: str
 
     # Database Settings
     DB_USER: str
@@ -37,8 +39,8 @@ class Settings(BaseSettings):
     # SMTP Settings for email functionality
     SMTP_USER: Optional[str] = None # Optional - set in .env if email features are used
     SMTP_PASSWORD: Optional[str] = None # Optional - set in .env if email features are used
-    SMTP_SERVER: str = "smtp.gmail.com" # Default SMTP server
-    SMTP_PORT: int = 587 # Default SMTP port
+    SMTP_SERVER: str # Default SMTP server
+    SMTP_PORT: int # Default SMTP port
 
     class Config:
         env_file = ".env"

@@ -11,7 +11,7 @@ class UserOut(BaseModel):
     email: EmailStr
     password: str
     role: str
-    is_verified: bool
+    is_verified: bool  # Indicates if the user's email is verified
 
 class Token(BaseModel):
     access_token: str

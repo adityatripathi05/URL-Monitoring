@@ -1,5 +1,6 @@
 asyncpg
 fastapi
+fastapi-utilities
 passlib[bcrypt]
 pydantic
 pydantic[email]

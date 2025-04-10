@@ -1,25 +1,29 @@
-# backend\utils\logging.py
 import logging
-import os
+from json import dumps
 from datetime import datetime, timezone
 
+from config.settings import settings
 
-LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO").upper()
 
-class UTCFormatter(logging.Formatter):
-    def formatTime(self, record, datefmt=None):
-        dt = datetime.fromtimestamp(record.created, timezone.utc)
-        if datefmt:
-            s = dt.strftime(datefmt)
-        else:
-            t = dt.isoformat(timespec='milliseconds')
-            s = "%sZ" % t
-        return s
+class JSONFormatter(logging.Formatter):
+    def format(self, record):
+        log_record = {
+            "timestamp": datetime.fromtimestamp(record.created, timezone.utc).isoformat(),
+            "level": record.levelname,
+            "message": record.getMessage(),
+            "module": record.module,
+            "function": record.funcName,
+            "line": record.lineno,
+        }
+        return dumps(log_record)
 
 logging.basicConfig(
-    level=LOG_LEVEL,
+    level=settings.LOG_LEVEL,
     format="%(asctime)s - %(levelname)s - %(message)s",
     datefmt="%Y-%m-%dT%H:%M:%S.%fZ"
 )
 
 logger = logging.getLogger(__name__)
+handler = logging.StreamHandler()
+handler.setFormatter(JSONFormatter())
+logger.addHandler(handler)

@@ -1,22 +1,19 @@
 # backend\config\database.py
-import logging
-import os
-
 import asyncio
 import asyncpg
 from typing import Dict
 
+from config.settings import settings
+from utils.app_logging import logger
 
-# Configure logging
-logger = logging.getLogger(__name__)
 
 # Database configuration settings from environment variables
 DB_CONFIG = {
-    "host": os.getenv("DB_HOST"),
-    "database": os.getenv("DB_NAME"),
-    "user": os.getenv("DB_USER"),
-    "password": os.getenv("DB_PASSWORD"),
-    "port": int(os.getenv("DB_PORT"))
+    "host": settings.DB_HOST,
+    "database": settings.DB_NAME,
+    "user": settings.DB_USER,
+    "password": settings.DB_PASSWORD,
+    "port": settings.DB_PORT
 }
 
 
@@ -35,7 +32,6 @@ class Database:
             raise ValueError("Missing required database configuration parameters")
         self.db_config = db_config
         self.pool = None
-        self.logger = logging.getLogger(__name__)
 
     async def initialize(self):
         """
@@ -44,9 +40,9 @@ class Database:
         if self.pool is None:
             try:
                 self.pool = await asyncpg.create_pool(**self.db_config, min_size=1, max_size=20)
-                self.logger.info("Database connection pool initialized")
+                logger.info("Database connection pool initialized")
             except Exception as e:
-                self.logger.error(f"Error initializing database connection pool: {e}")
+                logger.error(f"Error initializing database connection pool: {e}")
                 raise
 
         return self
@@ -57,19 +53,8 @@ class Database:
         """
         if self.pool:
             await self.pool.close()
-            self.logger.info("Database connection pool closed")
+            logger.info("Database connection pool closed")
 
 
 # Global database instance
 database = Database(DB_CONFIG)
-
-
-async def get_db_connection():
-    """
-    Asynchronous dependency that yields a database connection from the pool.
-    """
-    await database.initialize()
-    try:
-        yield database
-    finally:
-        pass  # Don't close pool here as it's shared

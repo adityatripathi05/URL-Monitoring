@@ -5,8 +5,8 @@ import asyncpg
 import asyncio  # Import asyncio for sleep
 
 from utils.app_logging import logger
+from utils.db_utils import fetch_all
 from config.database import DB_CONFIG
-
 
 async def apply_migrations():
     """Applies pending SQL migrations to the database with retry logic."""
@@ -46,7 +46,7 @@ async def apply_migrations():
     # --- Get Applied Migrations ---
     logger.info("Fetching already applied migrations...")
     applied_migrations = set()
-    rows = await conn.fetch("SELECT migration_id FROM _migrations;")
+    rows = await fetch_all(conn, "SELECT migration_id FROM _migrations;")
     for row in rows:
         applied_migrations.add(row['migration_id'])
     logger.debug(f"Already applied migrations: {applied_migrations}")
@@ -67,13 +67,14 @@ async def apply_migrations():
             migration_path = os.path.join(migrations_dir, filename)
             logger.info(f"Applying migration: {filename}")
             try:
-                with open(migration_path, 'r') as f:
-                    sql_script = f.read()
-                await conn.execute(sql_script)
-                await conn.execute(
-                    "INSERT INTO _migrations (migration_id) VALUES ($1);", filename
-                )
-                logger.info(f"Migration {filename} applied successfully.")
+                async with conn.transaction():  # Wrap in a transaction
+                    with open(migration_path, 'r') as f:
+                        sql_script = f.read()
+                    await conn.execute(sql_script)
+                    await conn.execute(
+                        "INSERT INTO _migrations (migration_id) VALUES ($1);", filename
+                    )
+                    logger.info(f"Migration {filename} applied successfully.")
             except Exception as e:
                 logger.error(f"Error applying migration {filename}: {e}")
                 raise

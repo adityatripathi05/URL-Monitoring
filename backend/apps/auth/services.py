@@ -7,6 +7,7 @@ from typing import Union
 
 from config.settings import settings
 from utils.app_logging import logger
+from utils.db_utils import fetch_one, get_db_connection
 from apps.auth.security import verify_password, decode_token
 from apps.auth.schemas import UserOut, TokenData
 
@@ -21,16 +22,21 @@ class InvalidPassword(Exception):
     pass
 
 
-async def is_token_blacklisted(jti: str, db):
+async def is_token_blacklisted(jti: str):
     """
     Checks if a token (by jti) is blacklisted in the database.
     """
+    conn = None
     try:
-        result = await db.fetch_one("SELECT jti FROM token_blacklist WHERE jti = :jti", {"jti": jti})
+        conn = await get_db_connection()
+        result = await fetch_one(conn, "SELECT jti FROM token_blacklist WHERE jti = :jti", {"jti": jti})
         return result is not None # Returns True if jti found (blacklisted)
     except Exception as e:
         logger.error(f"Database error checking token blacklist: {e}")
         return False # Assume not blacklisted on DB error for safety (or raise exception)
+    finally:
+            if conn:
+                await conn.close()
 
 
 async def blacklist_token(token: str, db):
@@ -71,24 +77,14 @@ class InvalidPassword(Exception):
     pass
 
 
-async def get_db_connection():
-    """Abstraction for getting a database connection from the pool."""
-    return await asyncpg.connect(
-        user=settings.DB_USER,
-        password=settings.DB_PASSWORD,
-        database=settings.DB_NAME,
-        host=settings.DB_HOST,
-        port=settings.DB_PORT,
-    )
-
-
 async def get_user_by_email(email: str) -> Union[UserOut, None]: # Changed return type to UserOut
     """Fetches a user from the database by email and returns UserOut object."""
     conn = None
     try:
         conn = await get_db_connection()
         # Modified query to select is_verified and join roles, and match schema
-        user_row = await conn.fetchrow(
+        user_row = await fetch_one(
+            conn,
             """
             SELECT 
                 u.id, u.username, u.email, u.password as hashed_password, 
