@@ -5,7 +5,6 @@ __pycache__
 .vscode
 .git
 .env
-backend/.env
 pg-data/
 pgadmin-data/
 node_modules

@@ -12,4 +12,6 @@ CREATE TABLE IF NOT EXISTS users (
     FOREIGN KEY (role_id) REFERENCES roles(id)
 );
 
-CREATE INDEX IF NOT EXISTS email_idx ON users (email);
+
+-- Add index on users.email for faster lookups
+CREATE INDEX IF NOT EXISTS idx_users_email ON users (email);

@@ -5,7 +5,8 @@ __pycache__
 .env
 .git
 .vscode
-docker-compose.yml
+docker-compose.dev.yml
+docker-compose.prod.yml
 pg-data/
 pgadmin-data/
 pgadmin-data/pgadmin4.db

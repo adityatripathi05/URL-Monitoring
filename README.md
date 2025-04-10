@@ -101,3 +101,14 @@ graph LR
   G --> H["Record Script in _migrations table"]
   H --> I["Database Schema Updated"]
 ```
+
+## Build and Deployment
+
+1. **Build Docker Images**:
+  ```bash
+   docker-compose -f docker-compose.template.yml build
+  ```
+2. **Start Service**:
+  ```bash
+  docker-compose -f docker-compose..template.yml up -d
+  ```

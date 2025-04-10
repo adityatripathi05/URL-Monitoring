@@ -7,3 +7,6 @@ CREATE TABLE IF NOT EXISTS token_blacklist (
 
 -- Optional: Index on expires_at for efficient cleanup of old tokens
 CREATE INDEX IF NOT EXISTS idx_token_blacklist_expires_at ON token_blacklist (expires_at);
+
+-- Add index on token_blacklist.jti for faster token blacklist checks
+CREATE INDEX IF NOT EXISTS idx_token_blacklist_jti ON token_blacklist (jti);
