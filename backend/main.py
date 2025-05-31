@@ -14,11 +14,11 @@ from apps.auth.routes import router as auth_router # Import the auth router
 setup_logging()
 logger = get_logger(__name__)
 
-app = FastAPI(lifespan=lifespan) # MODIFIED HERE
+app = FastAPI(lifespan=lifespan)
 
 
 # This task will be managed by fastapi-utilities once the app is running
-@repeat_every(seconds=3600, logger=logger, wait_first=True) # Added logger and wait_first
+@repeat_every(seconds=3600, logger=logger, wait_first=True)
 async def cleanup_expired_tokens():
     """
     Periodically cleans up expired tokens from the token_blacklist table.

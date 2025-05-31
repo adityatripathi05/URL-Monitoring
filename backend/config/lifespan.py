@@ -1,9 +1,11 @@
 # backend/config/lifespan.py
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
-from config.database import database  # Assuming database object is in config.database
+
+# Import necessary functions and schemas from our modules
+from config.database import database
 from config.settings import settings
-from config.logging import get_logger # Using Structlog logger
+from config.logging import get_logger
 
 logger = get_logger(__name__)
 
