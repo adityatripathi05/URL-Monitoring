@@ -9,7 +9,7 @@ from config.settings import settings
 from utils.app_logging import logger
 from utils.db_utils import fetch_one, get_db_connection
 from apps.auth.security import verify_password, decode_token
-from apps.auth.schemas import UserOut, TokenData
+from apps.auth.schemas import UserOut, TokenData, UserInDB
 
 
 # --- Custom Exceptions (Keep existing) ---
@@ -22,6 +22,27 @@ class InvalidPassword(Exception):
     pass
 
 
+# --- Token Blacklist Management ---
+#
+# The `token_blacklist` table stores JTIs of tokens that have been invalidated
+# (e.g., due to logout). Each entry includes an `expires_at` timestamp, which
+# corresponds to the original expiration time of the blacklisted token.
+#
+# IMPORTANT: Periodic Cleanup Required
+# To prevent the `token_blacklist` table from growing indefinitely with expired
+# JTIs, a cleanup mechanism must be implemented. This mechanism should periodically
+# remove entries where the `expires_at` timestamp is in the past.
+#
+# Example SQL for cleanup (adjust for your specific SQL dialect if necessary,
+#                         NOW() is common for PostgreSQL):
+# DELETE FROM token_blacklist WHERE expires_at < NOW();
+#
+# This cleanup can be implemented as:
+# - A cron job running at regular intervals (e.g., daily).
+# - A scheduled task within the application if using a task scheduler (e.g., APScheduler, Celery).
+#
+# Regularly cleaning this table ensures optimal performance and manages database size.
+
 async def is_token_blacklisted(jti: str):
     """
     Checks if a token (by jti) is blacklisted in the database.
@@ -29,7 +50,7 @@ async def is_token_blacklisted(jti: str):
     conn = None
     try:
         conn = await get_db_connection()
-        result = await fetch_one(conn, "SELECT jti FROM token_blacklist WHERE jti = :jti", {"jti": jti})
+        result = await fetch_one(conn, "SELECT jti FROM token_blacklist WHERE jti = $1", jti)
         return result is not None # Returns True if jti found (blacklisted)
     except Exception as e:
         logger.error(f"Database error checking token blacklist: {e}")
@@ -39,37 +60,23 @@ async def is_token_blacklisted(jti: str):
                 await conn.close()
 
 
-async def blacklist_token(token: str, db):
+async def blacklist_token(jti: str, expires_at: datetime, db: any):
     """
-    Blacklists a token by adding its jti to the token_blacklist table.
+    Blacklists a token by adding its jti and expiry to the token_blacklist table.
     """
-    payload = decode_token(token)
-    if payload is None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid token format for blacklisting"
-        )
     try:
-        token_data = TokenData(**payload)
-        if token_data.jti is None or token_data.exp is None:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid token payload for blacklisting (missing jti or exp)"
-            )
-
-        expires_at = datetime.utcfromtimestamp(token_data.exp) # Convert exp to datetime
-
         await db.execute(
-            "INSERT INTO token_blacklist (jti, expires_at) VALUES (:jti, :expires_at)",
-            {"jti": token_data.jti, "expires_at": expires_at}
+            "INSERT INTO token_blacklist (jti, expires_at) VALUES ($1, $2)",
+            jti, expires_at
         )
+        logger.info(f"Token with JTI {jti} blacklisted successfully.")
     except HTTPException: # Re-raise HTTPExceptions directly
         raise
     except Exception as e:
-        logger.error(f"Database error blacklisting token: {e}")
+        logger.error(f"Database error blacklisting token with JTI {jti}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Could not blacklist token due to a server error"
+            detail="Could not blacklist token due to a server error."
         )
 
 class InvalidPassword(Exception):
@@ -77,12 +84,11 @@ class InvalidPassword(Exception):
     pass
 
 
-async def get_user_by_email(email: str) -> Union[UserOut, None]: # Changed return type to UserOut
-    """Fetches a user from the database by email and returns UserOut object."""
+async def get_user_by_email(email: str) -> Union[UserInDB, None]:
+    """Fetches a user from the database by email and returns UserInDB object."""
     conn = None
     try:
         conn = await get_db_connection()
-        # Modified query to select is_verified and join roles, and match schema
         user_row = await fetch_one(
             conn,
             """
@@ -97,15 +103,16 @@ async def get_user_by_email(email: str) -> Union[UserOut, None]: # Changed retur
         )
         if user_row:
             user_data = dict(user_row)
-            user_data['role'] = user_data.pop('role_name') # Rename role_name to role to match UserOut
-            return UserOut(**user_data)
+            user_data['password'] = user_data.pop('hashed_password')
+            user_data['role'] = user_data.pop('role_name')
+            return UserInDB(**user_data)
         return None
     finally:
         if conn:
             await conn.close()
 
 
-async def authenticate_user(email: str, password: str) -> UserOut: # Changed return type to UserOut
+async def authenticate_user(email: str, password: str) -> UserOut:
     """
     Authenticates a user by email and password.
 
@@ -116,11 +123,11 @@ async def authenticate_user(email: str, password: str) -> UserOut: # Changed ret
     Returns:
         UserOut object if authentication is successful.
     """
-    user = await get_user_by_email(email)
-    if not user:
+    user_in_db = await get_user_by_email(email)
+    if not user_in_db:
         raise UserNotFound("User not found")
 
-    if not verify_password(password, user.password): # Compare against fetched hashed password
+    if not verify_password(password, user_in_db.password): # Compare against fetched hashed password
         raise InvalidPassword("Invalid password")
 
-    return user
+    return UserOut(**user_in_db.model_dump())
