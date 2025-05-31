@@ -4,7 +4,7 @@ import asyncpg
 from typing import Dict
 
 # Import necessary functions and schemas from our modules
-from config.logging import get_logger
+from config.logging_util import get_logger
 from config.settings import settings
 
 # Initialize logger

@@ -6,7 +6,7 @@ from typing import Annotated # Use Annotated for Depends with OAuth2
 from pydantic import EmailStr # Use EmailStr for email validation
 
 # Import necessary functions and schemas from our modules
-from backend.config.logging import get_logger
+from config.logging_util import get_logger
 from utils.db_utils import get_db_connection
 from apps.auth.services import (
     authenticate_user, UserNotFound, InvalidPassword,

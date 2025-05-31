@@ -1,7 +1,7 @@
 from asyncpg import Connection
 
 # Import necessary functions and schemas from our modules
-from config.logging import get_logger
+from config.logging_util import get_logger
 from config.database import database
 
 # Initialize logger
