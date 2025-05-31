@@ -3,11 +3,11 @@ import asyncio
 import asyncpg
 from typing import Dict
 
+# Import necessary functions and schemas from our modules
 from config.settings import settings
-# from utils.app_logging import logger # REMOVE THIS
-from .logging import get_logger # ADD THIS
+from config.logging import get_logger
 
-logger = get_logger(__name__) # ADD THIS
+logger = get_logger(__name__)
 
 # Database configuration settings from environment variables
 DB_CONFIG = {
