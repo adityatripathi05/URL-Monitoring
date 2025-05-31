@@ -3,15 +3,15 @@ from fastapi import FastAPI
 from fastapi_utilities import repeat_every
 
 # Import necessary functions and schemas from our modules
-from config.logging import setup_logging, get_logger
-from backend.config.lifespan import lifespan
+from config.logging_util import setup_logging, get_logger
+from config.lifespan import lifespan
 from config.database import database # Keep for cleanup_expired_tokens
-from backend.config.routes import api_router
+from config.routes import api_router
 
 # Call setup_logging() early, but ensure settings are loaded.
 # This should be called once per application lifecycle.
-# If config.logging.setup_logging() was already called, ensure this is idempotent or called only here.
-# For simplicity, assuming it's called here as the primary point if not already done in config.logging itself.
+# If config.logging_util.setup_logging() was already called, ensure this is idempotent or called only here.
+# For simplicity, assuming it's called here as the primary point if not already done in config.logging_util itself.
 setup_logging()
 # Initialize logger
 logger = get_logger(__name__)

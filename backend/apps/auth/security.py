@@ -5,7 +5,7 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 
 # Import necessary functions and schemas from our modules
-from backend.config.logging import get_logger
+from config.logging_util import get_logger
 from config.settings import settings 
 
 # Initialize logger

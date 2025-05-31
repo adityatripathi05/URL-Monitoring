@@ -6,7 +6,7 @@ import asyncio
 from dotenv import load_dotenv
 
 # Import necessary functions and schemas from our modules
-from config.logging import get_logger
+from config.logging_util import get_logger
 from utils.db_utils import fetch_one
 
 # Initialize logger

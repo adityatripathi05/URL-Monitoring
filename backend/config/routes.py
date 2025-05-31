@@ -2,7 +2,7 @@
 from fastapi import APIRouter
 
 # Import necessary functions and schemas from our modules
-from backend.apps.auth.routes import router as auth_router
+from apps.auth.routes import router as auth_router
 
 api_router = APIRouter()
 

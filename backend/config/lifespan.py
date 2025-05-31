@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 # Import necessary functions and schemas from our modules
-from config.logging import get_logger
+from config.logging_util import get_logger
 from config.database import database
 from config.settings import settings
 
@@ -16,7 +16,7 @@ async def lifespan(app: FastAPI):
     logger.info("Application startup sequence initiated...")
 
     # JWT Secret Check
-    if settings.ENVIRONMENT != "development" and settings.JWT_SECRET_KEY == "default_super_secret_key_change_me":
+    if settings.environment != "development" and settings.JWT_SECRET_KEY == "default_super_secret_key_change_me":
         logger.error("FATAL: JWT_SECRET_KEY is not set to a secure value. Update the .env file.")
         # Raising an error here will prevent FastAPI from starting up if the key is insecure in non-dev environments.
         raise RuntimeError("JWT_SECRET_KEY must be set to a secure value in production.")
