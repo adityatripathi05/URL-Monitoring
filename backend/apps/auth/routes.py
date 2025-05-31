@@ -1,4 +1,5 @@
 # backend/apps/auth/routes.py
+from datetime import datetime # Import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from typing import Annotated # Use Annotated for Depends with OAuth2
@@ -7,9 +8,13 @@ from pydantic import EmailStr # Use EmailStr for email validation
 # Import necessary functions and schemas from our modules
 from utils.app_logging import logger
 from utils.db_utils import get_db_connection
-from apps.auth.services import authenticate_user, UserNotFound, InvalidPassword, get_user_by_email, blacklist_token
+from apps.auth.services import (
+    authenticate_user, UserNotFound, InvalidPassword,
+    get_user_by_email as service_get_user_by_email,
+    blacklist_token, is_token_blacklisted # Import is_token_blacklisted
+)
 from apps.auth.security import create_access_token, create_refresh_token, decode_token
-from apps.auth.schemas import TokenData, UserOut, Token, RefreshTokenRequest, AccessTokenResponse # Import new schemas
+from apps.auth.schemas import TokenData, UserOut, Token, RefreshTokenRequest, AccessTokenResponse, LogoutRequest # Import new schemas
 from config.settings import get_token_expiry_by_role
 
 
@@ -72,13 +77,13 @@ async def get_current_active_user(
     Dependency: Gets validated token data and fetches the corresponding active user.
     Raises HTTPException 404 if user not found, potentially 400 if inactive/unverified.
     """
-    user = await get_user_by_email(token_data.sub) # Use email from token subject
-    if user is None:
+    user_in_db = await service_get_user_by_email(token_data.sub) # Use email from token subject
+    if user_in_db is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     # Optional: Add checks for active/verified status if needed
-    # if not user.is_verified:
+    # if not user_in_db.is_verified:
     #     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User account not verified")
-    return user
+    return UserOut(**user_in_db.model_dump())
 
 @router.post("/send-verification-email", status_code=status.HTTP_200_OK)
 async def send_verification_email(
@@ -102,7 +107,7 @@ async def reset_password(email: EmailStr):
     """
     Sends a password reset email to the user.
     """
-    user = await get_user_by_email(email)
+    user = await service_get_user_by_email(email)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -196,12 +201,26 @@ async def refresh_access_token(
         # Validate payload structure using TokenData schema
         token_data = TokenData(**payload)
 
-        # TODO: Check if refresh token is blacklisted (when blacklist is implemented)
-        # if await is_token_blacklisted(token_data.jti):
-        #     raise credentials_exception
+        # Ensure token type is 'refresh' and JTI is present before blacklist check
+        if token_data.type != "refresh":
+            logger.warning(f"Token type mismatch during refresh attempt: expected 'refresh', got '{token_data.type}'")
+            raise credentials_exception
+
+        if not token_data.jti:
+            logger.warning("Refresh token missing JTI during refresh attempt.")
+            raise credentials_exception
+
+        # Check if refresh token is blacklisted
+        if await is_token_blacklisted(token_data.jti):
+            logger.info(f"Attempt to use blacklisted refresh token (JTI: {token_data.jti}) for user {token_data.sub}.")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Refresh token is invalid or has been revoked",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
 
         # Fetch user details based on the subject (email) from the refresh token
-        user = await get_user_by_email(token_data.sub)
+        user = await service_get_user_by_email(token_data.sub)
         if user is None:
             raise credentials_exception # User associated with token not found
 
@@ -223,18 +242,58 @@ async def refresh_access_token(
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
 async def logout(
-    token_data: Annotated[TokenData, Depends(get_current_token_data)], # Validate token first
+    logout_payload: LogoutRequest, # Expect refresh token in request body
+    access_token_data: Annotated[TokenData, Depends(get_current_token_data)], # Validate access token first
     db = Depends(get_db_connection)
 ):
     """
-    Endpoint to logout user by blacklisting the refresh token.
+    Endpoint to logout user by blacklisting both access and refresh tokens.
     """
-    try:
-        await blacklist_token(token_data.jti, db)  # Blacklist the token using its JTI
-        logger.info(f"Token with JTI {token_data.jti} blacklisted successfully.")
-    except Exception as e:
-        logger.error(f"Error blacklisting token: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to logout user."
-        )
+    # 1. Blacklist the current (access) token
+    if not access_token_data.jti or not access_token_data.exp:
+        logger.warning(f"Access token for user {access_token_data.sub} missing jti or exp during logout.")
+        # Decide if this is critical; for now, we'll log and proceed to refresh token blacklisting.
+        # If it were critical, we might raise an HTTPException here.
+    else:
+        try:
+            access_token_expires_at = datetime.utcfromtimestamp(access_token_data.exp)
+            await blacklist_token(
+                jti=access_token_data.jti,
+                expires_at=access_token_expires_at,
+                db=db
+            )
+            # Service layer handles logging for successful blacklisting
+        except Exception as e:
+            # Log error but don't stop the logout process, try to blacklist refresh token anyway
+            logger.error(f"Error blacklisting access token for user {access_token_data.sub}, JTI {access_token_data.jti}: {e}")
+
+    # 2. Blacklist the provided refresh token
+    refresh_payload = decode_token(logout_payload.refresh_token)
+
+    if refresh_payload and \
+       refresh_payload.get("type") == "refresh" and \
+       refresh_payload.get("jti") and \
+       refresh_payload.get("exp"):
+
+        refresh_jti = refresh_payload["jti"]
+        refresh_exp = refresh_payload["exp"]
+
+        try:
+            refresh_token_expires_at = datetime.utcfromtimestamp(refresh_exp)
+            await blacklist_token(
+                jti=refresh_jti,
+                expires_at=refresh_token_expires_at,
+                db=db
+            )
+            logger.info(f"Refresh token JTI {refresh_jti} for user {access_token_data.sub} blacklisted successfully.")
+        except Exception as e:
+            logger.error(f"Error blacklisting refresh token JTI {refresh_jti} for user {access_token_data.sub}: {e}")
+            # If refresh token blacklisting fails, we might want to raise an error,
+            # as this could be a security concern. For now, just logging.
+            # Consider raising HTTPException here if strict logout is required.
+    else:
+        logger.warning(f"Invalid or malformed refresh token provided during logout for user {access_token_data.sub}. Could not blacklist.")
+
+    # Note: The overall endpoint will still return 204 even if one of the blacklisting operations fails internally,
+    # as long as no HTTPException is explicitly raised to stop the process.
+    # This is a design choice: prioritize completing logout flow vs. strict error on partial failure.

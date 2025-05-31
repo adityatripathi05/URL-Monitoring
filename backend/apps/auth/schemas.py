@@ -8,10 +8,13 @@ class UserCreate(BaseModel):
 
 class UserOut(BaseModel):
     id: UUID
+    username: str
     email: EmailStr
-    password: str
     role: str
     is_verified: bool  # Indicates if the user's email is verified
+
+class UserInDB(UserOut):
+    password: str
 
 class Token(BaseModel):
     access_token: str
@@ -32,3 +35,6 @@ class RefreshTokenRequest(BaseModel):
 class AccessTokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
+
+class LogoutRequest(BaseModel):
+    refresh_token: str
