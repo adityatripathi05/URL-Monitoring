@@ -10,3 +10,6 @@ python-multipart
 python-jose[cryptography]
 uvicorn[standard]
 structlog
+alembic
+sqlalchemy>=1.4
+psycopg2-binary
