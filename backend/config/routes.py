@@ -1,8 +1,8 @@
 # backend/config/routes.py
 from fastapi import APIRouter
+
+# Import necessary functions and schemas from our modules
 from backend.apps.auth.routes import router as auth_router
-# Import other app routers here as they are created
-# from backend.apps.monitoring.routes import router as monitoring_router # Example
 
 api_router = APIRouter()
 

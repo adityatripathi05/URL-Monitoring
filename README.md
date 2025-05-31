@@ -60,7 +60,26 @@ graph TD
         docker-compose exec url-backend python -c "import secrets; print(secrets.token_hex(32))"
         ```
     *   **Update `.env`**: Open the `.env` file and set the `JWT_SECRET_KEY` variable to the generated key. You can also adjust database credentials if needed.
-4.  **Build and Start Services**: Run `docker-compose up --build -d`. This will build the images and start the database, backend, and other services in the background.
+4.  **Build and Start Services**:
+    * **Build Docker Images**:
+      ```bash
+      docker-compose -f docker-compose.template.yml build
+      ```
+    * **Start Service**:
+      ```bash
+      docker-compose -f docker-compose.template.yml up
+      ```
+      ```bash
+      docker-compose -f docker-compose.template.yml up -d
+      ```
+    * **Start Service**:
+      ```bash
+      docker-compose -f docker-compose.template.yml down
+      ```
+    * **All-In-One**: This will build the images and start the database, backend, and other services in the background.
+      ```bash
+      docker-compose -f docker-compose.template.yml up --build -d
+      ```
 5.  **Apply Database Migrations**:
     Database schema migrations are now managed by Alembic and must be applied manually using the command line after the database service is running.
     ```bash
@@ -146,18 +165,3 @@ The backend is designed with modularity and maintainability in mind:
 *   **Modular Applications (`backend/apps/`)**: Features are organized into distinct applications (e.g., `auth`), each typically containing its own routes, services, and schemas.
 *   **Lean Entry Point (`backend/main.py`)**: The main application file is kept minimal, primarily responsible for instantiating the FastAPI application and including configurations.
 *   **Dependency Injection**: FastAPI's dependency injection is used for managing dependencies like database connections, security checks, and service access.
-
-## Build and Deployment
-
-1. **Build Docker Images**:
-  ```bash
-   docker-compose -f docker-compose.template.yml build
-  ```
-2. **Start Service**:
-  ```bash
-  docker-compose -f docker-compose.template.yml up -d
-  ```
-3. **Start Service**:
-  ```bash
-  docker-compose -f docker-compose.template.yml down
-  ```

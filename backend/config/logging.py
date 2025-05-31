@@ -2,7 +2,9 @@
 import logging
 import sys
 import structlog
-from .settings import settings # Assuming settings.py is in the same directory
+
+# Import necessary functions and schemas from our modules
+from config.settings import settings
 
 def setup_logging():
     log_level_str = settings.LOG_LEVEL.upper()

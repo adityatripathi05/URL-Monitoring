@@ -1,11 +1,15 @@
 # backend/apps/auth/security.py
 from datetime import datetime, timedelta
 import uuid
-
 from jose import JWTError, jwt
-from passlib.context import CryptContext  # Import CryptContext
+from passlib.context import CryptContext
 
-from config.settings import settings # Import settings
+# Import necessary functions and schemas from our modules
+from backend.config.logging import get_logger
+from config.settings import settings 
+
+# Initialize logger
+logger = get_logger(__name__)
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto") # Use the same context
 
