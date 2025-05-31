@@ -2,10 +2,12 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from typing import Annotated # Use Annotated for Depends with OAuth2
+from pydantic import EmailStr # Use EmailStr for email validation
 
 # Import necessary functions and schemas from our modules
-from config.database import get_db_connection
-from apps.auth.services import authenticate_user, UserNotFound, InvalidPassword, get_user_by_email
+from utils.app_logging import logger
+from utils.db_utils import get_db_connection
+from apps.auth.services import authenticate_user, UserNotFound, InvalidPassword, get_user_by_email, blacklist_token
 from apps.auth.security import create_access_token, create_refresh_token, decode_token
 from apps.auth.schemas import TokenData, UserOut, Token, RefreshTokenRequest, AccessTokenResponse # Import new schemas
 from config.settings import get_token_expiry_by_role
@@ -78,6 +80,38 @@ async def get_current_active_user(
     #     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User account not verified")
     return user
 
+@router.post("/send-verification-email", status_code=status.HTTP_200_OK)
+async def send_verification_email(
+    current_user: Annotated[UserOut, Depends(get_current_active_user)]
+):
+    """
+    Sends a verification email to the current user.
+    """
+    if current_user.is_verified:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User is already verified."
+        )
+    
+    # TODO: Implement email sending logic here
+    logger.info(f"Verification email sent to {current_user.email}")
+    return {"message": "Verification email sent."}
+
+@router.post("/reset-password", status_code=status.HTTP_200_OK)
+async def reset_password(email: EmailStr):
+    """
+    Sends a password reset email to the user.
+    """
+    user = await get_user_by_email(email)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found."
+        )
+    
+    # TODO: Implement password reset token generation and email sending logic
+    logger.info(f"Password reset email sent to {email}")
+    return {"message": "Password reset email sent."}
 
 @router.post('/login', response_model=Token) # Use Token response model
 async def login_for_access_token(
@@ -189,17 +223,18 @@ async def refresh_access_token(
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
 async def logout(
-    token_data: dict = Depends(get_current_token_data), # Validate token first
+    token_data: Annotated[TokenData, Depends(get_current_token_data)], # Validate token first
     db = Depends(get_db_connection)
 ):
     """
     Endpoint to logout user by blacklisting the refresh token.
     """
-    refresh_token_request = RefreshTokenRequest(refresh_token=request.headers.get("Authorization").split("Bearer ")[-1]) # Extract from Authorization header
-    if not refresh_token_request or not refresh_token_request.refresh_token:
+    try:
+        await blacklist_token(token_data.jti, db)  # Blacklist the token using its JTI
+        logger.info(f"Token with JTI {token_data.jti} blacklisted successfully.")
+    except Exception as e:
+        logger.error(f"Error blacklisting token: {e}")
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Refresh token required for logout"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to logout user."
         )
-    await blacklist_token(refresh_token_request.refresh_token, db) # Blacklist the refresh token
-    return None # 204 No Content - successful logout with no response body

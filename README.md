@@ -110,5 +110,9 @@ graph LR
   ```
 2. **Start Service**:
   ```bash
-  docker-compose -f docker-compose..template.yml up -d
+  docker-compose -f docker-compose.template.yml up -d
+  ```
+3. **Start Service**:
+  ```bash
+  docker-compose -f docker-compose.template.yml down
   ```
