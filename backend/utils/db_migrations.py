@@ -4,9 +4,12 @@ import os
 import asyncpg
 import asyncio  # Import asyncio for sleep
 
-from utils.app_logging import logger
+# from utils.app_logging import logger # REMOVE THIS
+from ..config.logging import get_logger # ADD THIS
 from utils.db_utils import fetch_all
 from config.database import DB_CONFIG
+
+logger = get_logger(__name__) # ADD THIS
 
 async def apply_migrations():
     """Applies pending SQL migrations to the database with retry logic."""

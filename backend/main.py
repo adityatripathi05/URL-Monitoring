@@ -2,11 +2,17 @@
 from fastapi import FastAPI
 from fastapi_utilities import repeat_every
 
-from utils.app_logging import logger
+# from utils.app_logging import logger # REMOVE THIS
+from config.logging import setup_logging, get_logger # ADD THIS
 from config.database import database
-from config.settings import settings
+from config.settings import settings # Ensure settings is imported before setup_logging if it depends on it
 from utils.db_migrations import apply_migrations
 from apps.auth.routes import router as auth_router # Import the auth router
+
+# Call setup_logging() early, but ensure settings are loaded.
+# If settings are loaded upon import of config.settings, this is fine.
+setup_logging() # ADD THIS
+logger = get_logger(__name__) # ADD THIS, or specific name like "main_app"
 
 app = FastAPI()
 
@@ -50,4 +56,4 @@ async def health_check():
 # Include the authentication router
 app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
 
-logger.info("Application started")
+logger.info("Application started with Structlog")
