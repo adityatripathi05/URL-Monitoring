@@ -39,6 +39,19 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  url-frontend:
+    container_name: url-frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80" # Host:Container
+    restart: unless-stopped
+    networks:
+      - monitoring-network
+    depends_on:
+      - url-backend # Optional: wait for backend to start
+
   url-pgadmin:
     image: dpage/pgadmin4
     container_name: url-pgadmin

@@ -41,7 +41,7 @@ graph TD
 ## Components
 
 *   **FastAPI Backend**: Powers the application's API, handling business logic, data processing, and user authentication. For detailed information on its architecture, setup, and management commands, see the [Backend README](./backend/README.md).
-*   **React Frontend**: Provides a user interface for visualizing the monitoring data and managing the system.
+*   **React Frontend**: Provides a dynamic user interface for user registration, login, URL management, and visualization of monitoring data. It is built with React and uses token-based authentication (JWT) to interact securely with the backend API. The frontend is containerized using Docker and served by Nginx. For more details on the frontend architecture, setup, and development, see the [Frontend README](./frontend/README.md).
 *   **TimescaleDB**: Stores the time-series data for the monitored URLs.
 *   **Telegraf**: Collects the monitoring data from the URLs.
 *   **Docker**: Containerizes the application for easy deployment.
@@ -92,6 +92,7 @@ graph TD
     ```
 7.  **Access Application**:
     *   The FastAPI backend should be available (e.g., at `http://localhost:8000` or as configured). Check the `/docs` endpoint for API documentation.
+    *   The React Frontend should be accessible at `http://localhost:3000`.
     *   The pgAdmin interface (if configured) should be accessible (e.g., at `http://localhost:5050`).
 
 ## Authentication
