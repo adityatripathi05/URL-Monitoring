@@ -2,10 +2,14 @@
 from fastapi import FastAPI
 from fastapi_utilities import repeat_every
 
-from config.logging import setup_logging, get_logger
-from config.lifespan import lifespan
+# from utils.app_logging import logger # REMOVE THIS
+from config.logging import setup_logging, get_logger # ADD THIS
+from backend.config.lifespan import lifespan # ADD THIS
 from config.database import database # Keep for cleanup_expired_tokens
-from apps.auth.routes import router as auth_router # Import the auth router
+# from config.settings import settings # No longer needed directly in main.py for startup checks
+# from utils.db_migrations import apply_migrations # REMOVE THIS
+# from apps.auth.routes import router as auth_router # REMOVE THIS
+from backend.config.routes import api_router # ADD THIS
 
 # Call setup_logging() early, but ensure settings are loaded.
 # This should be called once per application lifecycle.
@@ -14,11 +18,18 @@ from apps.auth.routes import router as auth_router # Import the auth router
 setup_logging()
 logger = get_logger(__name__)
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(lifespan=lifespan) # MODIFIED HERE
+
+# OLD STARTUP AND SHUTDOWN FUNCTIONS ARE REMOVED
+# @app.on_event("startup")
+# async def startup_event(): ... (Removed - logic moved to lifespan)
+
+# @app.on_event("shutdown")
+# async def on_shutdown(): ... (Removed - logic moved to lifespan)
 
 
 # This task will be managed by fastapi-utilities once the app is running
-@repeat_every(seconds=3600, logger=logger, wait_first=True)
+@repeat_every(seconds=3600, logger=logger, wait_first=True) # Added logger and wait_first
 async def cleanup_expired_tokens():
     """
     Periodically cleans up expired tokens from the token_blacklist table.
@@ -35,12 +46,15 @@ async def cleanup_expired_tokens():
     else:
         logger.warning("Token cleanup skipped: Database pool not available.")
 
+# REMOVE OLD HEALTH CHECK
+# @app.get("/health")
+# async def health_check():
+#    return {"status": "healthy"}
 
-@app.get("/health")
-async def health_check():
-    return {"status": "healthy"}
+# Include the main router from config/routes.py
+app.include_router(api_router) # ADD THIS
 
-# Include the authentication router
-app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
+# REMOVE OLD AUTH ROUTER INCLUDE
+# app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
 
-logger.info("FastAPI application instance created. Lifespan manager will handle startup/shutdown events.")
+logger.info("FastAPI application instance created. Routers included from config. Lifespan manager will handle startup/shutdown events.")

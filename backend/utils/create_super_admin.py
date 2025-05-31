@@ -1,15 +1,13 @@
 from sys import exit
 from os import path, environ
+
 import asyncpg
-from passlib.context import CryptContext
+from passlib.context import CryptContext # Import passlib
 import asyncio
 from dotenv import load_dotenv
 
-# Import necessary functions and schemas from our modules
-from config.logging import get_logger
+from utils.app_logging import logger  # Import logger
 from utils.db_utils import fetch_one
-
-logger = get_logger(__name__)
 
 # Configure passlib context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

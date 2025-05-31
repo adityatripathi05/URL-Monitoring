@@ -1,10 +1,8 @@
 from asyncpg import Connection
 
-# Import necessary functions and schemas from our modules
-from config.logging import get_logger
+from utils.app_logging import logger
 from config.database import database
 
-logger = get_logger(__name__)
 
 async def get_db_connection():
     """
