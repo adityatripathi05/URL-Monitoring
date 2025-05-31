@@ -4,8 +4,10 @@ import asyncpg
 from typing import Dict
 
 from config.settings import settings
-from utils.app_logging import logger
+# from utils.app_logging import logger # REMOVE THIS
+from .logging import get_logger # ADD THIS
 
+logger = get_logger(__name__) # ADD THIS
 
 # Database configuration settings from environment variables
 DB_CONFIG = {
