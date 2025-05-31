@@ -19,7 +19,6 @@ def setup_logging():
         structlog.contextvars.merge_contextvars,         # Merge context variables into the log
         structlog.processors.StackInfoRenderer(),        # Render stack information
         structlog.dev.set_exc_info,                      # Add exc_info to log records if present
-        structlog.processors.format_exc_info,            # Format an exception if present
         structlog.stdlib.add_log_level,                  # Add log level to event dict
         structlog.stdlib.add_logger_name,                # Add logger name to event dict
         structlog.stdlib.PositionalArgumentsFormatter(), # Apply %-style formatting for stdlib logs
@@ -27,7 +26,7 @@ def setup_logging():
             fmt="%Y-%m-%d %H:%M:%S", utc=False           # fmt="iso", utc=True
         ),
         structlog.processors.UnicodeDecoder(),           # Decode bytes to unicode
-        structlog.processors.ExceptionPrettyPrinter(),   # Pretty print exceptions
+        structlog.processors.ExceptionPrettyPrinter() if settings.environment == "development" else structlog.processors.format_exc_info,   # Pretty print exceptions
         structlog.processors.CallsiteParameterAdder(
             parameters={
                         # structlog.processors.CallsiteParameter.FILENAME, 
