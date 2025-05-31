@@ -1,18 +1,17 @@
 # backend/apps/auth/services.py
 from datetime import datetime
-
 import asyncpg
 from fastapi import HTTPException, status
 from typing import Union
 
-from config.settings import settings
-# from utils.app_logging import logger # REMOVE THIS
-from config.logging import get_logger # ADD THIS
+# Import necessary functions and schemas from our modules
+from config.logging_util import get_logger
 from utils.db_utils import fetch_one, get_db_connection
-from apps.auth.security import verify_password, decode_token
-from apps.auth.schemas import UserOut, TokenData, UserInDB
+from apps.auth.security import verify_password
+from apps.auth.schemas import UserOut, UserInDB
 
-logger = get_logger(__name__) # ADD THIS
+# Initialize logger
+logger = get_logger(__name__)
 
 
 # --- Custom Exceptions (Keep existing) ---

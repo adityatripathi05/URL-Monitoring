@@ -6,8 +6,7 @@ from typing import Annotated # Use Annotated for Depends with OAuth2
 from pydantic import EmailStr # Use EmailStr for email validation
 
 # Import necessary functions and schemas from our modules
-# from utils.app_logging import logger # REMOVE THIS
-from config.logging import get_logger # ADD THIS
+from config.logging_util import get_logger
 from utils.db_utils import get_db_connection
 from apps.auth.services import (
     authenticate_user, UserNotFound, InvalidPassword,
@@ -24,7 +23,8 @@ router = APIRouter(
     tags=["Authentication"] # Add tags for Swagger UI
 )
 
-logger = get_logger(__name__) # ADD THIS
+# Initialize logger
+logger = get_logger(__name__)
 
 # OAuth2 scheme definition (points to the login route)
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")

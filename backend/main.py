@@ -2,58 +2,41 @@
 from fastapi import FastAPI
 from fastapi_utilities import repeat_every
 
-# from utils.app_logging import logger # REMOVE THIS
-from config.logging import setup_logging, get_logger # ADD THIS
-from config.database import database
-from config.settings import settings # Ensure settings is imported before setup_logging if it depends on it
-from utils.db_migrations import apply_migrations
-from apps.auth.routes import router as auth_router # Import the auth router
+# Import necessary functions and schemas from our modules
+from config.logging_util import setup_logging, get_logger
+from config.lifespan import lifespan
+from config.database import database # Keep for cleanup_expired_tokens
+from config.routes import api_router
 
 # Call setup_logging() early, but ensure settings are loaded.
-# If settings are loaded upon import of config.settings, this is fine.
-setup_logging() # ADD THIS
-logger = get_logger(__name__) # ADD THIS, or specific name like "main_app"
+# This should be called once per application lifecycle.
+# If config.logging_util.setup_logging() was already called, ensure this is idempotent or called only here.
+# For simplicity, assuming it's called here as the primary point if not already done in config.logging_util itself.
+setup_logging()
+# Initialize logger
+logger = get_logger(__name__)
 
-app = FastAPI()
+app = FastAPI(lifespan=lifespan)
 
-
-@app.on_event("startup")
-async def startup_event():
-    logger.info("Running database migrations...")
-        # Check for a strong JWT_SECRET_KEY
-    if settings.environment != "development" and settings.JWT_SECRET_KEY == "default_super_secret_key_change_me":
-        logger.error("JWT_SECRET_KEY is not set to a secure value. Update the .env file.")
-        raise RuntimeError("JWT_SECRET_KEY must be set to a secure value in production.")
-    try:
-        await apply_migrations()
-        logger.info("Database migrations finished successfully.")
-    except Exception as e:
-        logger.error(f"Database migration failed: {e}")
-        # Consider more robust error handling here, e.g., exiting the application
-
-@app.on_event("startup")
-@repeat_every(seconds=3600)  # Run every hour
+# This task will be managed by fastapi-utilities once the app is running
+@repeat_every(seconds=3600, logger=logger, wait_first=True)
 async def cleanup_expired_tokens():
     """
     Periodically cleans up expired tokens from the token_blacklist table.
     """
-    logger.info("Running expired token cleanup...")
-    async with database.pool.acquire() as conn:
+    logger.info("Running expired token cleanup task...")
+    if database.pool: # Check if pool is initialized
         try:
-            await conn.execute("DELETE FROM token_blacklist WHERE expires_at < NOW();")
-            logger.info("Expired tokens cleaned up successfully.")
+            # asyncpg.pool.Pool.acquire is a context manager
+            async with database.pool.acquire() as conn:
+                await conn.execute("DELETE FROM token_blacklist WHERE expires_at < NOW();")
+                logger.info("Expired tokens cleaned up successfully.")
         except Exception as e:
-            logger.error(f"Error during token cleanup: {e}")
+            logger.error("Error during token cleanup.", exc_info=True) # Use exc_info for details
+    else:
+        logger.warning("Token cleanup skipped: Database pool not available.")
 
-@app.on_event("shutdown")
-async def on_shutdown():
-    await database.close()
+# Include the main router from config/routes.py
+app.include_router(api_router)
 
-@app.get("/health")
-async def health_check():
-    return {"status": "healthy"}
-
-# Include the authentication router
-app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
-
-logger.info("Application started with Structlog")
+logger.info("FastAPI application instance created. Routers included from config. Lifespan manager will handle startup/shutdown events.")
