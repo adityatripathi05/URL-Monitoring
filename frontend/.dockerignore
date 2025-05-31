@@ -1,0 +1,24 @@
+# Dockerignore for React frontend
+
+# Dependencies
+node_modules/
+
+# Build artifacts (if they are somehow present before build stage)
+build/
+dist/
+
+# Git
+.git
+.gitignore
+
+# Env files (should be handled by build arguments or runtime configs)
+.env*
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Optional: Editor directories and files
+.vscode/
+.idea/
