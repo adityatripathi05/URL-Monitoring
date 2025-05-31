@@ -3,7 +3,6 @@ from pydantic_settings import BaseSettings
 from datetime import timedelta
 from typing import Optional
 
-
 class Settings(BaseSettings):
     app_name: str
     admin_email: str

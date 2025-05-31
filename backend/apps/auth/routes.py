@@ -1,12 +1,12 @@
 # backend/apps/auth/routes.py
-from datetime import datetime
+from datetime import datetime # Import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from typing import Annotated # Use Annotated for Depends with OAuth2
 from pydantic import EmailStr # Use EmailStr for email validation
 
 # Import necessary functions and schemas from our modules
-from config.logging import get_logger
+from backend.config.logging import get_logger
 from utils.db_utils import get_db_connection
 from apps.auth.services import (
     authenticate_user, UserNotFound, InvalidPassword,
@@ -23,6 +23,7 @@ router = APIRouter(
     tags=["Authentication"] # Add tags for Swagger UI
 )
 
+# Initialize logger
 logger = get_logger(__name__)
 
 # OAuth2 scheme definition (points to the login route)

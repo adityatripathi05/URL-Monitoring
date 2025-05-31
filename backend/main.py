@@ -2,20 +2,21 @@
 from fastapi import FastAPI
 from fastapi_utilities import repeat_every
 
+# Import necessary functions and schemas from our modules
 from config.logging import setup_logging, get_logger
-from config.lifespan import lifespan
+from backend.config.lifespan import lifespan
 from config.database import database # Keep for cleanup_expired_tokens
-from apps.auth.routes import router as auth_router # Import the auth router
+from backend.config.routes import api_router
 
 # Call setup_logging() early, but ensure settings are loaded.
 # This should be called once per application lifecycle.
 # If config.logging.setup_logging() was already called, ensure this is idempotent or called only here.
 # For simplicity, assuming it's called here as the primary point if not already done in config.logging itself.
 setup_logging()
+# Initialize logger
 logger = get_logger(__name__)
 
 app = FastAPI(lifespan=lifespan)
-
 
 # This task will be managed by fastapi-utilities once the app is running
 @repeat_every(seconds=3600, logger=logger, wait_first=True)
@@ -35,12 +36,7 @@ async def cleanup_expired_tokens():
     else:
         logger.warning("Token cleanup skipped: Database pool not available.")
 
+# Include the main router from config/routes.py
+app.include_router(api_router)
 
-@app.get("/health")
-async def health_check():
-    return {"status": "healthy"}
-
-# Include the authentication router
-app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
-
-logger.info("FastAPI application instance created. Lifespan manager will handle startup/shutdown events.")
+logger.info("FastAPI application instance created. Routers included from config. Lifespan manager will handle startup/shutdown events.")

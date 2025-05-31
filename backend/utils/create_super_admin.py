@@ -1,7 +1,7 @@
 from sys import exit
 from os import path, environ
 import asyncpg
-from passlib.context import CryptContext
+from passlib.context import CryptContext # Import passlib
 import asyncio
 from dotenv import load_dotenv
 
@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 from config.logging import get_logger
 from utils.db_utils import fetch_one
 
+# Initialize logger
 logger = get_logger(__name__)
 
 # Configure passlib context

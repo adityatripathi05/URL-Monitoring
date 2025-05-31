@@ -4,9 +4,10 @@ import asyncpg
 from typing import Dict
 
 # Import necessary functions and schemas from our modules
-from config.settings import settings
 from config.logging import get_logger
+from config.settings import settings
 
+# Initialize logger
 logger = get_logger(__name__)
 
 # Database configuration settings from environment variables

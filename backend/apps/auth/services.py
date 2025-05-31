@@ -5,11 +5,12 @@ from fastapi import HTTPException, status
 from typing import Union
 
 # Import necessary functions and schemas from our modules
-from config.logging import get_logger
+from backend.config.logging import get_logger
 from utils.db_utils import fetch_one, get_db_connection
-from apps.auth.security import verify_password, decode_token
-from apps.auth.schemas import UserOut, TokenData, UserInDB
+from apps.auth.security import verify_password
+from apps.auth.schemas import UserOut, UserInDB
 
+# Initialize logger
 logger = get_logger(__name__)
 
 

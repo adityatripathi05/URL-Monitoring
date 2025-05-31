@@ -4,8 +4,7 @@ import sys
 import structlog
 
 # Import necessary functions and schemas from our modules
-from config.settings import settings # Assuming settings.py is in the same directory
-
+from config.settings import settings
 
 def setup_logging():
     log_level_str = settings.LOG_LEVEL.upper()
@@ -22,7 +21,7 @@ def setup_logging():
         structlog.processors.TimeStamper(fmt="iso", utc=True),
     ]
 
-    if settings.environment == "development":
+    if settings.ENVIRONMENT == "development":
         # Pretty, human-readable logs for development
         processors = shared_processors + [
             structlog.dev.ConsoleRenderer(),
@@ -57,7 +56,7 @@ def setup_logging():
     stdlib_formatter_processors = [
         structlog.stdlib.ProcessorFormatter.remove_processors_meta, # Important for stdlib integration
     ]
-    if settings.environment == "development":
+    if settings.ENVIRONMENT == "development":
         stdlib_formatter_processors.append(structlog.dev.ConsoleRenderer())
     else:
         stdlib_formatter_processors.append(structlog.processors.JSONRenderer())
@@ -74,7 +73,7 @@ def setup_logging():
 
     # Example of how to get a logger instance
     # logger = structlog.get_logger(__name__)
-    # logger.info("Structlog logging configured", environment=settings.environment, log_level=log_level_str)
+    # logger.info("Structlog logging configured", environment=settings.ENVIRONMENT, log_level=log_level_str)
 
 # Call setup when this module is imported (or explicitly call it in main.py startup)
 # For now, let's set it up on import.

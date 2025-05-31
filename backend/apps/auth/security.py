@@ -5,7 +5,11 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 
 # Import necessary functions and schemas from our modules
-from config.settings import settings
+from backend.config.logging import get_logger
+from config.settings import settings 
+
+# Initialize logger
+logger = get_logger(__name__)
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto") # Use the same context
 

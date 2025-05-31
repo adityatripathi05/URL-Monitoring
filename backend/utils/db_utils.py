@@ -4,6 +4,7 @@ from asyncpg import Connection
 from config.logging import get_logger
 from config.database import database
 
+# Initialize logger
 logger = get_logger(__name__)
 
 async def get_db_connection():
