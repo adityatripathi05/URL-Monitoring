@@ -2,12 +2,9 @@
 from fastapi import FastAPI
 from fastapi_utilities import repeat_every
 
-# from utils.app_logging import logger # REMOVE THIS
-from config.logging import setup_logging, get_logger # ADD THIS
-from backend.config.lifespan import lifespan # ADD THIS
+from config.logging import setup_logging, get_logger
+from config.lifespan import lifespan
 from config.database import database # Keep for cleanup_expired_tokens
-# from config.settings import settings # No longer needed directly in main.py for startup checks
-# from utils.db_migrations import apply_migrations # REMOVE THIS
 from apps.auth.routes import router as auth_router # Import the auth router
 
 # Call setup_logging() early, but ensure settings are loaded.
@@ -18,13 +15,6 @@ setup_logging()
 logger = get_logger(__name__)
 
 app = FastAPI(lifespan=lifespan) # MODIFIED HERE
-
-# OLD STARTUP AND SHUTDOWN FUNCTIONS ARE REMOVED
-# @app.on_event("startup")
-# async def startup_event(): ... (Removed - logic moved to lifespan)
-
-# @app.on_event("shutdown")
-# async def on_shutdown(): ... (Removed - logic moved to lifespan)
 
 
 # This task will be managed by fastapi-utilities once the app is running
