@@ -1,8 +1,10 @@
 from asyncpg import Connection
 
-from utils.app_logging import logger
+# from utils.app_logging import logger # REMOVE THIS
+from config.logging import get_logger # ADD THIS
 from config.database import database
 
+logger = get_logger(__name__) # ADD THIS
 
 async def get_db_connection():
     """
