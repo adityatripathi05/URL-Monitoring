@@ -39,7 +39,7 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
-  frontend:
+  url-frontend:
     container_name: url-frontend
     build:
       context: ./frontend
