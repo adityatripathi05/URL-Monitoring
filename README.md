@@ -71,7 +71,7 @@ graph TD
 
 ## Authentication
 
-*   Authentication is handled using JSON Web Tokens (JWT) via the `fastapi-jwt-auth` library.
+*   Authentication is handled using a custom JSON Web Tokens (JWT) implementation, providing fine-grained control over token generation, validation, and security features.
 *   Users log in via the `/auth/login` endpoint using their email and password (sent as form data: `username`=email, `password`=password).
 *   Upon successful login, an `access_token` and a `refresh_token` are returned.
 *   The `access_token` is required for accessing protected endpoints and is sent in the `Authorization: Bearer <token>` header.
@@ -80,7 +80,10 @@ graph TD
     *   **Viewer**: Longer expiration (default: 120 minutes).
     *   Expiration times can be configured via environment variables (`ADMIN_ACCESS_TOKEN_EXPIRES_MINUTES`, `VIEWER_ACCESS_TOKEN_EXPIRES_MINUTES`).
 *   The `/auth/refresh` endpoint can be used with a valid `refresh_token` to obtain a new `access_token`.
+*   A secure logout is implemented via the `/auth/logout` endpoint, which requires the refresh token to be sent in the request body. Upon logout, both the current access token and the provided refresh token are blacklisted to prevent their further use.
+*   The system uses a token blacklist to keep track of invalidated tokens. When refreshing tokens, the blacklist is checked to ensure revoked refresh tokens cannot be used.
 *   The JWT secret key is configured via the `JWT_SECRET_KEY` environment variable in the `.env` file. **It is crucial to set a strong, unique key for production.**
+*   For a detailed visualization of these authentication flows, including token validation, blacklisting, and role-based access control, please see the [Authentication Flow Diagram](flow_diagrams/auth_flow.md).
 
 ## Database Migration Management Architecture
 Database schema changes are managed via SQL scripts placed in the `backend/migrations` directory.

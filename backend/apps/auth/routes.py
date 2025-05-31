@@ -151,7 +151,7 @@ async def login_for_access_token(
         )
     except Exception as e:
         # Log the unexpected error for debugging
-        print(f"Unexpected error during login for {form_data.username}: {e}") # Basic print
+        logger.error(f"Unexpected error during login for {form_data.username}: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An internal server error occurred during login.",
@@ -236,7 +236,7 @@ async def refresh_access_token(
         return AccessTokenResponse(access_token=new_access_token)
 
     except Exception as e: # Catch potential decoding errors or other issues
-        print(f"Error during token refresh: {e}") # Basic logging
+        logger.error(f"Error during token refresh: {e}", exc_info=True)
         raise credentials_exception
 
 
