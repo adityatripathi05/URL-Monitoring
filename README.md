@@ -57,7 +57,7 @@ graph TD
     *   Copy the `.env.template` file to `.env`: `cp .env.template .env` (or use `copy` on Windows).
     *   **Generate JWT Secret Key**: Run `openssl rand -hex 32` or use a similar tool to generate a secure random string.
         ```bash
-        docker-compose exec url-backend python -c "import secrets; print(secrets.token_hex(32))"
+        docker exec url-backend python -c "import secrets; print(secrets.token_hex(32))"
         ```
     *   **Update `.env`**: Open the `.env` file and set the `JWT_SECRET_KEY` variable to the generated key. You can also adjust database credentials if needed.
 4.  **Build and Start Services**:
@@ -83,12 +83,12 @@ graph TD
 5.  **Apply Database Migrations**:
     Database schema migrations are now managed by Alembic and must be applied manually using the command line after the database service is running.
     ```bash
-    docker-compose exec url-backend alembic upgrade head
+    docker exec url-backend alembic upgrade head
     ```
     Run this command initially to set up the schema and whenever new migrations are added.
 6.  **Create Super Admin**: Once the database schema is up to date and services are running, execute the super admin creation script. You will be prompted for a username, email, and password:
     ```bash
-    docker-compose exec -it url-backend python backend/utils/create_super_admin.py create
+    docker exec -it url-backend python -m utils.create_super_admin create
     ```
 7.  **Access Application**:
     *   The FastAPI backend should be available (e.g., at `http://localhost:8000` or as configured). Check the `/docs` endpoint for API documentation.
