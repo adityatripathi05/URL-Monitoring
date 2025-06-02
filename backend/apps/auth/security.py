@@ -5,8 +5,8 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 
 # Import necessary functions and schemas from our modules
-from config.logging_util import get_logger
-from config.settings import settings 
+from project_config.logging_util import get_logger
+from project_config.settings import settings 
 
 # Initialize logger
 logger = get_logger(__name__)
@@ -17,7 +17,7 @@ def create_access_token(data: dict, expires_delta: timedelta = timedelta(minutes
     to_encode = data.copy()
     expire = datetime.utcnow() + expires_delta
     to_encode.update({"exp": expire, "type": "access", "jti": uuid.uuid4().hex}) # Add jti claim
-    return jwt.encode(to_encode, settings.jwt_secret_key, algorithm=settings.jwt_algorithm) # Use settings
+    return jwt.encode(to_encode, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM) # Use settings
 
 def create_refresh_token(data: dict):
     """Creates a refresh token with a longer expiry."""
@@ -25,7 +25,7 @@ def create_refresh_token(data: dict):
     # Use refresh token expiry from settings
     expire = datetime.utcnow() + settings.refresh_token_expires
     to_encode.update({"exp": expire, "type": "refresh", "jti": uuid.uuid4().hex}) # Add jti claim
-    return jwt.encode(to_encode, settings.jwt_secret_key, algorithm=settings.jwt_algorithm)
+    return jwt.encode(to_encode, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password) # Use pwd_context
@@ -35,6 +35,6 @@ def hash_password(password: str) -> str:
 
 def decode_token(token: str):
     try:
-        return jwt.decode(token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm]) # Use settings
+        return jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM]) # Use settings
     except JWTError:
         return None

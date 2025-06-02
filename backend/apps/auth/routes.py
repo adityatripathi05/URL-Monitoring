@@ -7,7 +7,7 @@ from pydantic import EmailStr # Use EmailStr for email validation
 from fastapi_limiter.depends import RateLimiter
 
 # Import necessary functions and schemas from our modules
-from config.logging_util import get_logger
+from project_config.logging_util import get_logger
 from utils.db_utils import get_db_connection
 from apps.auth.services import (
     authenticate_user, UserNotFound, InvalidPassword,
@@ -16,7 +16,7 @@ from apps.auth.services import (
 )
 from apps.auth.security import create_access_token, create_refresh_token, decode_token
 from apps.auth.schemas import TokenData, UserOut, Token, RefreshTokenRequest, AccessTokenResponse, LogoutRequest # Import new schemas
-from config.settings import get_token_expiry_by_role, settings
+from project_config.settings import get_token_expiry_by_role, settings
 
 
 router = APIRouter(
@@ -75,13 +75,14 @@ class RoleChecker:
 # Example usage: admin_dependency = Depends(RoleChecker(["admin"]))
 
 async def get_current_active_user(
-    token_data: Annotated[TokenData, Depends(get_current_token_data)]
+    token_data: Annotated[TokenData, Depends(get_current_token_data)],
+    db=Depends(get_db_connection)
 ) -> UserOut:
     """
     Dependency: Gets validated token data and fetches the corresponding active user.
     Raises HTTPException 404 if user not found, potentially 400 if inactive/unverified.
     """
-    user_in_db = await service_get_user_by_email(token_data.sub) # Use email from token subject
+    user_in_db = await service_get_user_by_email(token_data.sub, db)
     if user_in_db is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     # Optional: Add checks for active/verified status if needed
@@ -107,11 +108,11 @@ async def send_verification_email(
     return {"message": "Verification email sent."}
 
 @router.post("/reset-password", status_code=status.HTTP_200_OK)
-async def reset_password(email: EmailStr):
+async def reset_password(email: EmailStr, db=Depends(get_db_connection)):
     """
     Sends a password reset email to the user.
     """
-    user = await service_get_user_by_email(email)
+    user = await service_get_user_by_email(email, db)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -124,14 +125,15 @@ async def reset_password(email: EmailStr):
 
 @router.post('/login', response_model=Token, dependencies=[Depends(RateLimiter(times=int(settings.LOGIN_RATE_LIMIT.split('/')[0]), seconds=60))])
 async def login_for_access_token(
-    form_data: Annotated[OAuth2PasswordRequestForm, Depends()]
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    db=Depends(get_db_connection)
 ):
     """
     Logs in a user using email/password form data and returns an access token.
     """
     try:
         # form_data.username contains the email
-        user = await authenticate_user(form_data.username, form_data.password)
+        user = await authenticate_user(form_data.username, form_data.password, db)
         # authenticate_user returns UserOut on success, raises UserNotFound/InvalidPassword on failure
 
         # Determine access token expiration based on role from the UserOut object
@@ -187,7 +189,8 @@ async def admin_test_route(
 
 @router.post("/refresh", response_model=AccessTokenResponse)
 async def refresh_access_token(
-    refresh_request: RefreshTokenRequest
+    refresh_request: RefreshTokenRequest,
+    db=Depends(get_db_connection)
 ):
     """
     Refreshes the access token using a valid refresh token.
@@ -201,45 +204,30 @@ async def refresh_access_token(
         payload = decode_token(refresh_request.refresh_token)
         if payload is None or payload.get("type") != "refresh":
             raise credentials_exception
-
-        # Validate payload structure using TokenData schema
         token_data = TokenData(**payload)
-
-        # Ensure token type is 'refresh' and JTI is present before blacklist check
         if token_data.type != "refresh":
             logger.warning(f"Token type mismatch during refresh attempt: expected 'refresh', got '{token_data.type}'")
             raise credentials_exception
-
         if not token_data.jti:
             logger.warning("Refresh token missing JTI during refresh attempt.")
             raise credentials_exception
-
-        # Check if refresh token is blacklisted
-        if await is_token_blacklisted(token_data.jti):
+        if await is_token_blacklisted(token_data.jti, db):
             logger.info(f"Attempt to use blacklisted refresh token (JTI: {token_data.jti}) for user {token_data.sub}.")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Refresh token is invalid or has been revoked",
                 headers={"WWW-Authenticate": "Bearer"},
             )
-
-        # Fetch user details based on the subject (email) from the refresh token
-        user = await service_get_user_by_email(token_data.sub)
+        user = await service_get_user_by_email(token_data.sub, db)
         if user is None:
-            raise credentials_exception # User associated with token not found
-
-        # Determine new access token expiration based on role
+            raise credentials_exception
         access_token_expires = get_token_expiry_by_role(user.role)
-
-        # Create new access token payload
         new_token_payload = {"sub": user.email, "role": user.role}
-
         new_access_token = create_access_token(
             data=new_token_payload, expires_delta=access_token_expires
         )
         return AccessTokenResponse(access_token=new_access_token)
-
-    except Exception as e: # Catch potential decoding errors or other issues
+    except Exception as e:
         logger.error(f"Error during token refresh: {e}", exc_info=True)
         raise credentials_exception
 

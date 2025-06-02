@@ -4,8 +4,8 @@ import asyncpg
 from typing import Dict
 
 # Import necessary functions and schemas from our modules
-from config.logging_util import get_logger
-from config.settings import settings
+from project_config.logging_util import get_logger
+from project_config.settings import settings
 
 # Initialize logger
 logger = get_logger(__name__)

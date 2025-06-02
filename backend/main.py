@@ -1,21 +1,19 @@
 # backend\main.py
 from fastapi import FastAPI, Depends
 from fastapi_utilities import repeat_every
-from fastapi_limiter import FastAPILimiter
 from fastapi_limiter.depends import RateLimiter
-import aioredis
 
 # Import necessary functions and schemas from our modules
-from config.logging_util import setup_logging, get_logger
-from config.lifespan import lifespan
-from config.database import database # Keep for cleanup_expired_tokens
-from config.routes import api_router
-from config.settings import settings
+from project_config.logging_util import setup_logging, get_logger
+from project_config.lifespan import lifespan
+from project_config.database import database # Keep for cleanup_expired_tokens
+from project_config.routes import api_router
+from project_config.settings import settings
 
 # Call setup_logging() early, but ensure settings are loaded.
 # This should be called once per application lifecycle.
-# If config.logging_util.setup_logging() was already called, ensure this is idempotent or called only here.
-# For simplicity, assuming it's called here as the primary point if not already done in config.logging_util itself.
+# If project_config.logging_util.setup_logging() was already called, ensure this is idempotent or called only here.
+# For simplicity, assuming it's called here as the primary point if not already done in project_config.logging_util itself.
 setup_logging()
 # Initialize logger
 logger = get_logger(__name__)
@@ -25,12 +23,6 @@ app = FastAPI(
     version=settings.APP_VERSION,
     lifespan=lifespan
     )
-
-@app.on_event("startup")
-async def startup_event():
-    redis = await aioredis.from_url(settings.RATE_LIMIT_REDIS_URL, encoding="utf8", decode_responses=True)
-    await FastAPILimiter.init(redis)
-    logger.info(f"Rate limiter initialized with Redis at {settings.RATE_LIMIT_REDIS_URL}")
 
 # This task will be managed by fastapi-utilities once the app is running
 @repeat_every(seconds=3600, logger=logger, wait_first=True)
@@ -56,4 +48,4 @@ app.include_router(
     dependencies=[Depends(RateLimiter(times=int(settings.GLOBAL_RATE_LIMIT.split('/')[0]), seconds=60))]
 )
 
-logger.info("FastAPI application instance created. Routers included from config. Lifespan manager will handle startup/shutdown events.")
+logger.info("FastAPI application instance created. Routers included from project_config. Lifespan manager will handle startup/shutdown events.")

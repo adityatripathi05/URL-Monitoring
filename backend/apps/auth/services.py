@@ -5,7 +5,7 @@ from fastapi import HTTPException, status
 from typing import Union
 
 # Import necessary functions and schemas from our modules
-from config.logging_util import get_logger
+from project_config.logging_util import get_logger
 from utils.db_utils import fetch_one, get_db_connection
 from apps.auth.security import verify_password
 from apps.auth.schemas import UserOut, UserInDB
@@ -45,21 +45,16 @@ class InvalidPassword(Exception):
 #
 # Regularly cleaning this table ensures optimal performance and manages database size.
 
-async def is_token_blacklisted(jti: str):
+async def is_token_blacklisted(jti: str, db):
     """
     Checks if a token (by jti) is blacklisted in the database.
     """
-    conn = None
     try:
-        conn = await get_db_connection()
-        result = await fetch_one(conn, "SELECT jti FROM token_blacklist WHERE jti = $1", jti)
+        result = await fetch_one(db, "SELECT jti FROM token_blacklist WHERE jti = $1", jti)
         return result is not None # Returns True if jti found (blacklisted)
     except Exception as e:
         logger.error(f"Database error checking token blacklist: {e}")
         return False # Assume not blacklisted on DB error for safety (or raise exception)
-    finally:
-            if conn:
-                await conn.close()
 
 
 async def blacklist_token(jti: str, expires_at: datetime, db: any):
@@ -86,35 +81,29 @@ class InvalidPassword(Exception):
     pass
 
 
-async def get_user_by_email(email: str) -> Union[UserInDB, None]:
+async def get_user_by_email(email: str, db) -> Union[UserInDB, None]:
     """Fetches a user from the database by email and returns UserInDB object."""
-    conn = None
-    try:
-        conn = await get_db_connection()
-        user_row = await fetch_one(
-            conn,
-            """
-            SELECT 
-                u.id, u.username, u.email, u.password as hashed_password, 
-                u.role_id, r.name as role_name, u.is_verified
-            FROM users u
-            JOIN roles r ON u.role_id = r.id
-            WHERE u.email = $1
-            """,
-            email
-        )
-        if user_row:
-            user_data = dict(user_row)
-            user_data['password'] = user_data.pop('hashed_password')
-            user_data['role'] = user_data.pop('role_name')
-            return UserInDB(**user_data)
-        return None
-    finally:
-        if conn:
-            await conn.close()
+    user_row = await fetch_one(
+        db,
+        """
+        SELECT 
+            u.id, u.username, u.email, u.password as hashed_password, 
+            u.role_id, r.name as role_name, u.is_verified
+        FROM users u
+        JOIN roles r ON u.role_id = r.id
+        WHERE u.email = $1
+        """,
+        email
+    )
+    if user_row:
+        user_data = dict(user_row)
+        user_data['password'] = user_data.pop('hashed_password')
+        user_data['role'] = user_data.pop('role_name')
+        return UserInDB(**user_data)
+    return None
 
 
-async def authenticate_user(email: str, password: str) -> UserOut:
+async def authenticate_user(email: str, password: str, db) -> UserOut:
     """
     Authenticates a user by email and password.
 
@@ -125,7 +114,7 @@ async def authenticate_user(email: str, password: str) -> UserOut:
     Returns:
         UserOut object if authentication is successful.
     """
-    user_in_db = await get_user_by_email(email)
+    user_in_db = await get_user_by_email(email, db)
     if not user_in_db:
         raise UserNotFound("User not found")
 

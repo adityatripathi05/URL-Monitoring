@@ -13,8 +13,8 @@ config = context.config
 # Interpret the config file for Python logging.
 # This line needs to be compatible with your logging setup.
 # If using structlog primarily, you might not need fileConfig if structlog handles stdlib.
-if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+if project_config.config_file_name is not None:
+    fileConfig(project_config.config_file_name)
 
 # Import settings to get database URL (adjust import path as needed)
 # This assumes settings.py can be imported like this from alembic's execution context
@@ -23,7 +23,7 @@ import os, sys
 # __file__ is backend/alembic/env.py, so dirname(__file__) is backend/alembic
 # dirname(dirname(__file__)) is backend/
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-from config.settings import settings
+from project_config.settings import settings
 
 # Set target_metadata to None if not using SQLAlchemy models for autogenerate
 target_metadata = None
@@ -32,7 +32,7 @@ def get_db_url():
     return f"postgresql+asyncpg://{settings.DB_USER}:{settings.DB_PASSWORD}@{settings.DB_HOST}:{settings.DB_PORT}/{settings.DB_NAME}"
 
 # Update sqlalchemy.url in the config object
-config.set_main_option('sqlalchemy.url', get_db_url())
+project_config.set_main_option('sqlalchemy.url', get_db_url())
 
 def run_migrations_offline():
     """Run migrations in 'offline' mode.
@@ -43,7 +43,7 @@ def run_migrations_offline():
     Calls to context.execute() here emit the given string to the
     script output.
     """
-    url = config.get_main_option("sqlalchemy.url")
+    url = project_config.get_main_option("sqlalchemy.url")
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -72,7 +72,7 @@ async def run_migrations_online():
     and associate a connection with the context.
     """
     connectable = create_async_engine(
-        config.get_main_option("sqlalchemy.url"),
+        project_config.get_main_option("sqlalchemy.url"),
         # poolclass=pool.NullPool, # Recommended for Alembic async to avoid event loop issues
                                   # However, create_async_engine handles this differently.
                                   # NullPool is more for traditional sync engines with Alembic async.
