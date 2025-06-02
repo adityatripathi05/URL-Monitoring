@@ -64,7 +64,6 @@ The backend is designed with modularity and maintainability in mind:
     The following variables are essential:
 
     *   `APP_NAME`: Name of the application (e.g., "URL Monitoring System").
-    *   `ADMIN_EMAIL`: Default admin email for certain operations or notifications.
     *   `DB_NAME`: PostgreSQL database name.
     *   `DB_USER`: PostgreSQL database username.
     *   `DB_PASSWORD`: PostgreSQL database password.
@@ -76,7 +75,7 @@ The backend is designed with modularity and maintainability in mind:
         To generate one, you can use:
         ```bash
         # From within the project root using Docker (recommended):
-        docker-compose exec url-backend python -c "import secrets; print(secrets.token_hex(32))"
+        docker exec url-backend python -c "import secrets; print(secrets.token_hex(32))"
 
         # Or using openssl if available on your host:
         # openssl rand -hex 32
@@ -103,35 +102,35 @@ This project uses [Alembic](https://alembic.sqlalchemy.org/) to manage database 
 
 *   **View History**: See all migration revisions and the current revision.
     ```bash
-    docker-compose exec url-backend alembic history
+    docker exec url-backend alembic history
     ```
 *   **Check Current Revision**: Show the current database revision.
     ```bash
-    docker-compose exec url-backend alembic current
+    docker exec url-backend alembic current
     ```
 *   **Create a New Revision**: Generate a new empty revision file in `backend/alembic/versions/`. You will then need to edit this file to add your SQL changes for `upgrade()` and `downgrade()` functions.
     ```bash
-    docker-compose exec url-backend alembic revision -m "your_migration_message"
+    docker exec url-backend alembic revision -m "your_migration_message"
     ```
 *   **Upgrade to Latest Revision**: Apply all pending migrations. This is the most common command to update your database schema.
     ```bash
-    docker-compose exec url-backend alembic upgrade head
+    docker exec url-backend alembic upgrade head
     ```
 *   **Upgrade to a Specific Revision**:
     ```bash
-    docker-compose exec url-backend alembic upgrade <revision_id>
+    docker exec url-backend alembic upgrade <revision_id>
     ```
 *   **Downgrade by One Step**: Revert the last applied migration.
     ```bash
-    docker-compose exec url-backend alembic downgrade -1
+    docker exec url-backend alembic downgrade -1
     ```
 *   **Downgrade to a Specific Revision**:
     ```bash
-    docker-compose exec url-backend alembic downgrade <revision_id>
+    docker exec url-backend alembic downgrade <revision_id>
     ```
 *   **Stamp a Revision**: Mark a revision as applied without actually running the SQL. This is useful for initial setup if the schema already exists or for baseline management.
     ```bash
-    docker-compose exec url-backend alembic stamp head
+    docker exec url-backend alembic stamp head
     ```
 Ensure your `backend/.env` file is correctly configured with database credentials before running migrations.
 
@@ -193,14 +192,14 @@ The script is located at `backend/utils/create_super_admin.py` within the backen
 1.  **Create a Super Admin:**
     To create a new super admin user:
     ```bash
-    docker-compose exec -it url-backend python backend/utils/create_super_admin.py create
+    docker exec -it url-backend python -m utils.create_super_admin create
     ```
     You will be prompted to enter the username, email, and password for the new super admin.
 
 2.  **Update a Super Admin:**
     To update an existing super admin's username or password:
     ```bash
-    docker-compose exec -it url-backend python backend/utils/create_super_admin.py update
+    docker exec -it url-backend python -m utils.create_super_admin update
     ```
     You will be prompted for the email of the admin user to update, and then for the new username and/or password. Press Enter to skip a field if no change is desired for that field.
 

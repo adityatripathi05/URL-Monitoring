@@ -1,12 +1,16 @@
 # backend\main.py
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi_utilities import repeat_every
+from fastapi_limiter import FastAPILimiter
+from fastapi_limiter.depends import RateLimiter
+import aioredis
 
 # Import necessary functions and schemas from our modules
 from config.logging_util import setup_logging, get_logger
 from config.lifespan import lifespan
 from config.database import database # Keep for cleanup_expired_tokens
 from config.routes import api_router
+from config.settings import settings
 
 # Call setup_logging() early, but ensure settings are loaded.
 # This should be called once per application lifecycle.
@@ -16,7 +20,17 @@ setup_logging()
 # Initialize logger
 logger = get_logger(__name__)
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(
+    title=settings.APP_NAME,
+    version=settings.APP_VERSION,
+    lifespan=lifespan
+    )
+
+@app.on_event("startup")
+async def startup_event():
+    redis = await aioredis.from_url(settings.RATE_LIMIT_REDIS_URL, encoding="utf8", decode_responses=True)
+    await FastAPILimiter.init(redis)
+    logger.info(f"Rate limiter initialized with Redis at {settings.RATE_LIMIT_REDIS_URL}")
 
 # This task will be managed by fastapi-utilities once the app is running
 @repeat_every(seconds=3600, logger=logger, wait_first=True)
@@ -36,7 +50,10 @@ async def cleanup_expired_tokens():
     else:
         logger.warning("Token cleanup skipped: Database pool not available.")
 
-# Include the main router from config/routes.py
-app.include_router(api_router)
+# Example: Apply global rate limit to all routes (can be overridden per route)
+app.include_router(
+    api_router,
+    dependencies=[Depends(RateLimiter(times=int(settings.GLOBAL_RATE_LIMIT.split('/')[0]), seconds=60))]
+)
 
 logger.info("FastAPI application instance created. Routers included from config. Lifespan manager will handle startup/shutdown events.")

@@ -26,7 +26,7 @@ def setup_logging():
             fmt="%Y-%m-%d %H:%M:%S", utc=False           # fmt="iso", utc=True
         ),
         structlog.processors.UnicodeDecoder(),           # Decode bytes to unicode
-        structlog.processors.ExceptionPrettyPrinter() if settings.environment == "development" else structlog.processors.format_exc_info,   # Pretty print exceptions
+        structlog.processors.ExceptionPrettyPrinter() if settings.ENVIRONMENT == "development" else structlog.processors.format_exc_info,   # Pretty print exceptions
         structlog.processors.CallsiteParameterAdder(
             parameters={
                         # structlog.processors.CallsiteParameter.FILENAME, 
@@ -45,7 +45,7 @@ def setup_logging():
     # Renderer: Console for development, JSON for production
     renderer = (
         structlog.dev.ConsoleRenderer()
-        if settings.environment == "development"
+        if settings.ENVIRONMENT == "development"
         else structlog.processors.JSONRenderer()
     )
 

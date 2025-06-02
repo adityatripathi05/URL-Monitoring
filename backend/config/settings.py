@@ -4,22 +4,15 @@ from datetime import timedelta
 from typing import Optional
 
 class Settings(BaseSettings):
-    app_name: str
-    admin_email: str
-    app_version: str
-    environment: str
+    APP_NAME: str
+    APP_VERSION: str
+    ENVIRONMENT: str
 
-    # Database Settings
-    DB_USER: str
-    DB_PASSWORD: str
-    DB_HOST: str
-    DB_PORT: int
-    DB_NAME: str
+    # Logging Configuration
+    LOG_LEVEL: str
 
     # Timezone configuration
     TZ: str
-    # Logging Configuration
-    LOG_LEVEL: str
 
     # JWT Settings
     JWT_SECRET_KEY: str  # Load from JWT_SECRET_KEY env var - IMPORTANT: set in .env
@@ -36,6 +29,18 @@ class Settings(BaseSettings):
     # Default role
     default_role_id: str
 
+    # Rate Limiting Settings
+    RATE_LIMIT_REDIS_URL: str = "redis://url-redis:6379/0"  # Default Redis URL for rate limiting
+    GLOBAL_RATE_LIMIT: str = "100/1m"  # 100 requests per minute by default
+    LOGIN_RATE_LIMIT: str = "5/1m"     # 5 login attempts per minute by default
+
+    # Database Settings
+    DB_USER: str
+    DB_PASSWORD: str
+    DB_HOST: str
+    DB_PORT: int
+    DB_NAME: str
+
     # SMTP Settings for email functionality
     SMTP_USER: Optional[str] = None # Optional - set in .env if email features are used
     SMTP_PASSWORD: Optional[str] = None # Optional - set in .env if email features are used
@@ -46,7 +51,6 @@ class Settings(BaseSettings):
         env_file = ".env"
         env_prefix = '' # Ensure env vars like DB_USER are loaded directly
         case_sensitive = False # Allow case-insensitive matching for env vars
-
 
     @property
     def access_token_expires(self):
