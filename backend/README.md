@@ -64,7 +64,6 @@ The backend is designed with modularity and maintainability in mind:
     The following variables are essential:
 
     *   `APP_NAME`: Name of the application (e.g., "URL Monitoring System").
-    *   `ADMIN_EMAIL`: Default admin email for certain operations or notifications.
     *   `DB_NAME`: PostgreSQL database name.
     *   `DB_USER`: PostgreSQL database username.
     *   `DB_PASSWORD`: PostgreSQL database password.

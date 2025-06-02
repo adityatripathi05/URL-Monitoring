@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from typing import Annotated # Use Annotated for Depends with OAuth2
 from pydantic import EmailStr # Use EmailStr for email validation
+from fastapi_limiter.depends import RateLimiter
 
 # Import necessary functions and schemas from our modules
 from config.logging_util import get_logger
@@ -15,7 +16,7 @@ from apps.auth.services import (
 )
 from apps.auth.security import create_access_token, create_refresh_token, decode_token
 from apps.auth.schemas import TokenData, UserOut, Token, RefreshTokenRequest, AccessTokenResponse, LogoutRequest # Import new schemas
-from config.settings import get_token_expiry_by_role
+from config.settings import get_token_expiry_by_role, settings
 
 
 router = APIRouter(
@@ -121,7 +122,7 @@ async def reset_password(email: EmailStr):
     logger.info(f"Password reset email sent to {email}")
     return {"message": "Password reset email sent."}
 
-@router.post('/login', response_model=Token) # Use Token response model
+@router.post('/login', response_model=Token, dependencies=[Depends(RateLimiter(times=int(settings.LOGIN_RATE_LIMIT.split('/')[0]), seconds=60))])
 async def login_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()]
 ):
