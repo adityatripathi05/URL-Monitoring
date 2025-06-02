@@ -1,11 +1,13 @@
 # backend/config/lifespan.py
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
+from fastapi_limiter import FastAPILimiter
+import aioredis
 
 # Import necessary functions and schemas from our modules
-from config.logging_util import get_logger
-from config.database import database
-from config.settings import settings
+from project_config.logging_util import get_logger
+from project_config.database import database
+from project_config.settings import settings
 
 # Initialize logger
 logger = get_logger(__name__)
@@ -29,12 +31,16 @@ async def lifespan(app: FastAPI):
     # For now, we assume database.pool is available when needed.
     # If database.initialize() exists and is idempotent, it could be called here.
     # Example: await database.initialize() # if you add such a method to your Database class
-    logger.info("Database pool should be available (managed by config.database).")
+    logger.info("Database pool should be available (managed by project_config.database).")
 
 
     # Note: Database migrations are now handled by Alembic CLI, so no migration call here.
     # Note: The @repeat_every task for cleanup_expired_tokens in main.py will
     #       start automatically when the asyncio loop is running (after this startup phase).
+
+    redis = await aioredis.from_url(settings.RATE_LIMIT_REDIS_URL, encoding="utf8", decode_responses=True)
+    await FastAPILimiter.init(redis)
+    logger.info(f"Rate limiter initialized with Redis at {settings.RATE_LIMIT_REDIS_URL}")
 
     logger.info("Application startup complete. Ready to serve requests.")
     yield

@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 import argparse # Added argparse
 
 # Import necessary functions and schemas from our modules
-from config.logging_util import get_logger
+from project_config.logging_util import get_logger
 from utils.db_utils import fetch_one
 
 # Initialize logger

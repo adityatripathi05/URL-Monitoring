@@ -1,8 +1,8 @@
 from asyncpg import Connection
 
 # Import necessary functions and schemas from our modules
-from config.logging_util import get_logger
-from config.database import database
+from project_config.logging_util import get_logger
+from project_config.database import database
 
 # Initialize logger
 logger = get_logger(__name__)

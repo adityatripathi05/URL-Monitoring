@@ -7,7 +7,7 @@ import structlog
 from structlog.stdlib import ProcessorFormatter
 
 # Import project settings
-from config.settings import settings
+from project_config.settings import settings
 
 
 def setup_logging():
